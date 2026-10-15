@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yeeun's Tablet</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Apple SD Gothic Neo",Pretendard,system-ui,sans-serif;
+       background:radial-gradient(ellipse at 50% 30%,#3a3147,#17131d 70%); color:#1d1d1f; overflow:hidden; -webkit-font-smoothing:antialiased; word-break:keep-all}
+  button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
+
+  /* ---------- 태블릿 본체 (1220 x 860 기준, 화면에 맞춰 축소) ---------- */
+  .stage{position:fixed; inset:0; display:flex; align-items:center; justify-content:center}
+  .device{width:1220px; height:860px; flex-shrink:0; border-radius:52px; padding:20px; position:relative;
+          background:linear-gradient(145deg,#4a4651,#26232c); box-shadow:0 0 0 2px #6d6875 inset, 0 40px 120px rgba(0,0,0,.6);
+          transform-origin:center}
+  .device::before{content:""; position:absolute; left:8px; top:50%; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:#15131a; box-shadow:0 0 0 2px #3a3641}
+  .screen{position:relative; width:1180px; height:820px; border-radius:32px; overflow:hidden; background:#000; isolation:isolate}
+  .wall{position:absolute; inset:0; width:100%; height:100%; transition:transform 1s cubic-bezier(.2,.8,.2,1), filter .6s}
+  .screen.unlocked .wall{transform:scale(1.04)}
+  .screen.app-open .wall{filter:blur(18px) brightness(.9)}
+  .back-link{position:fixed; top:16px; left:16px; z-index:50; color:#e8dff0; font-size:13px; padding:8px 14px; border-radius:999px; background:rgba(255,255,255,.08); text-decoration:none}
+  .back-link:hover{background:rgba(255,255,255,.16)}
+
+  /* 배경 애니메이션 */
+  .lit{animation:flicker 8s ease-in-out infinite}
+  @keyframes flicker{0%,92%,100%{opacity:1} 95%{opacity:.15}}
+  .star{animation:twinkle 3s ease-in-out infinite} @keyframes twinkle{50%{opacity:.2}}
+  .blink{animation:twinkle 1.4s steps(2) infinite}
+  .neon{animation:neon 5s ease-in-out infinite} .neon.n2{animation-delay:1.6s} .neon.n3{animation-delay:3s}
+  @keyframes neon{0%,88%,100%{opacity:1} 90%{opacity:.4} 93%{opacity:1} 95%{opacity:.55}}
+  .train{animation:train 16s linear infinite}
+  @keyframes train{0%{transform:translateX(-360px)} 55%,100%{transform:translateX(1200px)}}
+  .drift{animation:drift 40s ease-in-out infinite alternate} .d2{animation-duration:55s} .d3{animation-duration:70s}
+  @keyframes drift{to{transform:translateX(60px)}}
+  .birds{animation:birds 30s linear infinite} @keyframes birds{0%{transform:translate(-700px,40px)} 100%{transform:translate(700px,-40px)}}
+
+  /* 상태 바 */
+  .status{position:absolute; top:0; left:0; right:0; height:34px; z-index:20; display:flex; align-items:center; justify-content:space-between;
+          padding:0 26px; color:#fff; font-size:15px; font-weight:600; text-shadow:0 1px 3px rgba(60,30,70,.35); pointer-events:none}
+  .status .r{display:flex; align-items:center; gap:8px}
+  .status svg{fill:#fff}
+
+  /* ---------- 잠금 화면 ---------- */
+  .lock{position:absolute; inset:0; z-index:15; color:#fff; display:flex; flex-direction:column; align-items:center; cursor:grab; touch-action:none;
+        transition:transform .55s cubic-bezier(.2,.8,.2,1), opacity .55s; text-shadow:0 2px 12px rgba(80,40,90,.25)}
+  .lock.dragging{transition:none; cursor:grabbing}
+  .lock.gone{transform:translateY(-100%) !important; opacity:0; pointer-events:none}
+  .lock .date{margin-top:70px; font-size:24px; font-weight:600; opacity:.95}
+  .lock .time{font-size:150px; font-weight:700; letter-spacing:-.02em; line-height:1; margin-top:2px; font-variant-numeric:tabular-nums}
+  .notif{margin-top:auto; margin-bottom:120px; width:440px; display:flex; gap:14px; align-items:center; padding:16px 18px; border-radius:22px;
+         background:rgba(255,255,255,.35); backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%);
+         color:#2b2233; text-shadow:none; animation:notif .8s .9s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes notif{from{opacity:0; transform:translateY(20px) scale(.96)}}
+  .notif .ic{width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:linear-gradient(160deg,#86e3a8,#34c06e); flex-shrink:0; align-self:flex-start}
+  .msgbody{flex:1; min-width:0}
+  .msgbody .meta{display:flex; justify-content:space-between; font-size:12px; opacity:.65; margin-bottom:1px}
+  .msgbody .meta small{font-size:12px; margin:0}
+  .typing{display:inline-flex; gap:4px; padding:7px 10px; margin-top:4px; border-radius:12px; background:rgba(255,255,255,.55)}
+  .typing i{width:6px; height:6px; border-radius:50%; background:#8c7a92; animation:dot 1s ease-in-out infinite}
+  .typing i:nth-child(2){animation-delay:.15s} .typing i:nth-child(3){animation-delay:.3s}
+  @keyframes dot{0%,60%,100%{transform:none; opacity:.5} 30%{transform:translateY(-4px); opacity:1}}
+  .msgbody .text{display:none; font-size:16px !important; font-weight:600; opacity:1 !important; margin-top:2px}
+  .notif.sent .typing{display:none} .notif.sent .text{display:block; animation:msgin .35s ease both}
+  @keyframes msgin{from{opacity:0; transform:translateY(4px)}}
+  .notif.sent{animation:bump .4s ease}
+  @keyframes bump{40%{transform:scale(1.03)}}
+  .notif b{display:block; font-size:15px}
+
+  /* 홈 화면 상단 메시지 배너 */
+  .banner{position:absolute; top:14px; left:50%; width:440px; margin-left:-220px; z-index:60; display:flex; gap:14px; align-items:center; padding:14px 18px; border-radius:22px;
+          background:rgba(255,255,255,.62); backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%); color:#2b2233;
+          box-shadow:0 10px 30px rgba(60,30,80,.18); cursor:pointer; transform:translateY(-140%); opacity:0; transition:transform .55s cubic-bezier(.2,.9,.25,1.15), opacity .3s}
+  .banner.show{transform:none; opacity:1}
+  .banner .ic{width:40px; height:40px; border-radius:11px; display:grid; place-items:center; background:linear-gradient(160deg,#86e3a8,#34c06e); flex-shrink:0; align-self:flex-start}
+  .banner b{display:block; font-size:15px}
+  .banner .text{display:block; font-size:16px; font-weight:600; margin-top:2px}
+  .swipe{position:absolute; bottom:22px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:10px; font-size:14px; font-weight:600}
+  .swipe span{animation:hint 2.4s ease-in-out infinite} @keyframes hint{50%{transform:translateY(-6px); opacity:.6}}
+  .bar{width:150px; height:5px; border-radius:3px; background:#fff}
+
+  /* ---------- 홈 화면 ---------- */
+  .home{position:absolute; inset:0; z-index:5; padding:56px 44px 0; display:grid; grid-template-columns:340px 1fr; gap:44px;
+        opacity:0; transform:scale(1.08); transition:opacity .6s .1s, transform .7s .1s cubic-bezier(.2,.8,.2,1); pointer-events:none}
+  .screen.unlocked .home{opacity:1; transform:none; pointer-events:auto}
+  .screen.app-open .home{opacity:.0; transform:scale(.94); transition:opacity .35s, transform .45s}
+  .widgets{display:flex; flex-direction:column; gap:20px}
+  .wd{border-radius:26px; padding:20px 22px; background:rgba(255,255,255,.32); backdrop-filter:blur(26px) saturate(170%); -webkit-backdrop-filter:blur(26px) saturate(170%);
+      color:#2b2233; box-shadow:0 8px 30px rgba(80,40,90,.12); cursor:pointer; transition:transform .2s; text-align:left; width:100%}
+  .wd:hover{transform:scale(1.02)}
+  .wd .k{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; opacity:.65}
+  .w-clock{cursor:default} .w-clock:hover{transform:none}
+  .w-clock .d{font-size:18px; font-weight:700; color:#e2558f; margin-top:4px}
+  .w-clock{display:flex; align-items:center; justify-content:center; padding:26px 22px}
+  .w-clock .t{font-size:72px; font-weight:700; letter-spacing:-.02em; line-height:1.05; font-variant-numeric:tabular-nums}
+  .w-clock .loc{font-size:14px; opacity:.75; margin-top:6px}
+  .w-music{display:flex; gap:16px; align-items:center}
+  .w-music .disc{width:76px; height:76px; border-radius:50%; flex-shrink:0; position:relative;
+                 background:conic-gradient(#d5e7ff,#ffd6f2,#d7fff1,#fff2c6,#d5e7ff); box-shadow:0 4px 14px rgba(0,0,0,.12)}
+  .w-music .disc::after{content:""; position:absolute; inset:38%; border-radius:50%; background:#fff; box-shadow:0 0 0 4px rgba(255,255,255,.5)}
+  .playing .disc{animation:spin 3s linear infinite} @keyframes spin{to{transform:rotate(360deg)}}
+  .w-music .tt{font-size:16px; font-weight:700; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:190px}
+  .w-music .ar{font-size:13px; opacity:.7}
+  .w-pass .row{display:flex; align-items:baseline; gap:8px; margin-top:6px}
+  .w-pass .n{font-size:44px; font-weight:800; color:#2b3a6b; line-height:1}
+  .w-pass .flags{font-size:22px; margin-top:8px; letter-spacing:4px}
+  .grid{display:grid; grid-template-columns:repeat(6,104px); gap:30px 22px; align-content:start; justify-content:start; padding-top:20px}
+  .app{display:flex; flex-direction:column; align-items:center; gap:8px; transition:transform .15s}
+  .app:active{transform:scale(.92)}
+  .ic{width:84px; height:84px; border-radius:20px; display:grid; place-items:center; color:#fff;
+      background:linear-gradient(160deg,var(--g1),var(--g2)); box-shadow:0 8px 20px rgba(60,30,70,.22), inset 0 1px 0 rgba(255,255,255,.35)}
+  .ic svg{width:46px; height:46px; fill:none; stroke:#fff; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+  .lb{color:#fff; font-size:14px; font-weight:600; text-shadow:0 1px 4px rgba(60,30,70,.45)}
+  .app:hover .ic{filter:brightness(1.06)}
+  .dock{position:absolute; left:50%; bottom:26px; transform:translateX(-50%); display:flex; gap:18px; padding:14px 18px; border-radius:30px;
+        background:rgba(255,255,255,.3); backdrop-filter:blur(26px) saturate(170%); -webkit-backdrop-filter:blur(26px) saturate(170%)}
+  .dock .ic{width:70px; height:70px; border-radius:17px} .dock .ic svg{width:38px; height:38px}
+  .homebar{position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:150px; height:5px; border-radius:3px; background:rgba(255,255,255,.9); z-index:30; cursor:pointer}
+  .homebar{opacity:0; pointer-events:none; transition:opacity .4s} .screen.unlocked .homebar{opacity:1; pointer-events:auto}
+  .screen.app-open .homebar{background:rgba(40,30,50,.85)}
+
+  /* ---------- 앱 화면 ---------- */
+  .appview{position:absolute; inset:0; z-index:25; background:#fbf7fa; display:flex; flex-direction:column; border-radius:32px; overflow:hidden;
+           opacity:0; transform:scale(.2); pointer-events:none; transition:transform .5s cubic-bezier(.2,.8,.2,1), opacity .35s}
+  .appview.open{opacity:1; transform:none; pointer-events:auto}
+  .nav{height:96px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:space-between; padding:0 32px 14px; border-bottom:1px solid #f0e3ea; background:rgba(251,247,250,.9)}
+  .nav h1{font-size:30px; font-weight:800; letter-spacing:-.02em}
+  .nav p{font-size:14px; color:#9a8090; margin-top:2px}
+  .done{font-size:17px; font-weight:600; color:#e2558f; padding:6px 4px}
+  .body{flex:1; overflow:auto; padding:22px 32px 40px}
+  .pane{display:none} .pane.show{display:block}
+
+  /* 메시지: 예은에게 물어보기 */
+  .chat{height:660px; max-width:780px; margin:-6px auto 0; display:flex; flex-direction:column; background:#fff; border-radius:24px; box-shadow:0 2px 16px rgba(120,70,95,.07); overflow:hidden}
+  .chat-head{display:flex; flex-direction:column; align-items:center; gap:4px; padding:14px 0 10px; border-bottom:1px solid #f3e8ee; background:#fdfafc}
+  .chat-head .av{width:46px; height:46px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(160deg,#ff9ec2,#f0628f); color:#fff; font-weight:800; font-size:16px}
+  .chat-head b{font-size:14px; color:#4b3a45} .chat-head small{font-size:11px; color:#b0a0aa}
+  .log{flex:1; overflow-y:auto; padding:18px 22px; display:flex; flex-direction:column; gap:6px; scroll-behavior:smooth}
+  .day{align-self:center; font-size:11px; color:#b0a0aa; margin-bottom:6px}
+  .bub{max-width:68%; padding:10px 15px; font-size:15px; line-height:1.5; border-radius:20px; animation:bubin .3s cubic-bezier(.2,.9,.3,1.2) both; word-break:keep-all}
+  @keyframes bubin{from{opacity:0; transform:translateY(8px) scale(.94)}}
+  .bub.me{align-self:flex-end; background:linear-gradient(160deg,#ff8fb8,#ec5d93); color:#fff; border-bottom-right-radius:6px; margin-top:8px}
+  .bub.ye{align-self:flex-start; background:#f2edf1; color:#2b2233; border-bottom-left-radius:6px}
+  .bub.typing{display:inline-flex; gap:4px; padding:13px 15px}
+  .bub.typing i{width:7px; height:7px; border-radius:50%; background:#a898a6; animation:dot 1s ease-in-out infinite}
+  .bub.typing i:nth-child(2){animation-delay:.15s} .bub.typing i:nth-child(3){animation-delay:.3s}
+  .qbar{border-top:1px solid #f3e8ee; padding:12px 16px 14px; background:#fdfafc}
+  .qbar .hint{font-size:11px; color:#b0a0aa; margin:0 0 8px 4px; letter-spacing:.04em}
+  .qs{display:flex; flex-wrap:wrap; gap:8px}
+  .q{font-size:14px; font-weight:600; color:#d0487f; background:#fff; border:1.5px solid #f6c3d7; padding:8px 14px; border-radius:999px; transition:all .15s}
+  .q:hover{background:#fde8f0; transform:translateY(-1px)}
+  .q:disabled{opacity:.35; pointer-events:none}
+  .q.reset{color:#8a7a86; border-color:#e6dbe2}
+
+  /* 여행: 동아시아·동남아시아 지도 */
+  .asia{display:grid; grid-template-columns:590px minmax(0,1fr); gap:18px; align-items:stretch}
+  .side{display:flex; flex-direction:column; gap:14px; min-width:0}
+  .map-card{position:relative; background:linear-gradient(180deg,#eaf3fb,#f4eef9); border-radius:22px; padding:10px; box-shadow:0 2px 14px rgba(120,70,95,.06)}
+  #asia{display:block; width:100%; height:620px}
+  #asia .sea{fill:transparent}
+  #asia .grat{stroke:#d5dff0; stroke-width:.6; fill:none; vector-effect:non-scaling-stroke}
+  #asia path.land{fill:#e8e0e6; stroke:#fbf7fa; stroke-width:.8; vector-effect:non-scaling-stroke; transition:fill .2s}
+  #asia path.myhome{fill:#ffd36b}
+  #asia path.v1{fill:#f7b8cd} #asia path.v2{fill:#f08bb0} #asia path.v3{fill:#e2558f}
+  #asia path.vis{cursor:pointer} #asia path.vis:hover,#asia path.vis.on{fill:#c23d73}
+  #asia .pin{cursor:pointer}
+  #asia .pin circle.dot{fill:#fff; stroke:#c23d73; stroke-width:2.2; vector-effect:non-scaling-stroke; transition:r .2s}
+  #asia .pin:hover circle.dot{fill:#c23d73}
+  #asia .pin.homep circle.dot{stroke:#d29b00}
+  #asia .pin text{font-size:15px; font-weight:700; fill:#5c4553; paint-order:stroke; stroke:#fbf7fa; stroke-width:3px; pointer-events:none}
+  #asia .ping{fill:#e2558f; opacity:.35; animation:ping 2.4s ease-out infinite; transform-box:fill-box; transform-origin:center}
+  @keyframes ping{0%{transform:scale(.6); opacity:.5} 100%{transform:scale(2.6); opacity:0}}
+  #asiaTip{position:absolute; pointer-events:none; background:#2b2233; color:#fff; font-size:13px; font-weight:700; padding:6px 10px; border-radius:8px; opacity:0;
+           transform:translate(-50%,-125%); white-space:nowrap; transition:opacity .15s; line-height:1.45}
+  #asiaTip small{display:block; font-weight:500; opacity:.8; font-size:12px}
+  .map-msg{position:absolute; left:16px; bottom:14px; font-size:12px; color:#9a8090}
+  .legend{position:absolute; right:18px; bottom:14px; display:flex; gap:12px; font-size:12px; color:#7d6a76; background:rgba(255,255,255,.7); padding:6px 10px; border-radius:999px}
+  .legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px}
+  .stats-row{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+  .stats-row .stat.list{grid-column:1/-1}
+  .stat{background:#fff; border-radius:18px; padding:16px 18px; box-shadow:0 2px 12px rgba(120,70,95,.06)}
+  .stat b{display:block; font-size:42px; color:#2b3a6b; line-height:1.1; font-weight:800}
+  .stat span{font-size:13px; color:#9a8090}
+  .stat.list{display:flex; flex-direction:column; gap:8px}
+  .stat.list .k{font-size:12px; font-weight:800; letter-spacing:.14em; color:#9d8fb6}
+  .chips{display:flex; flex-wrap:wrap; gap:6px}
+  .chip{font-size:13px; font-weight:700; padding:6px 10px; border-radius:999px; background:#fde8f0; color:#c2457a; cursor:pointer; transition:transform .15s}
+  .chip:hover,.chip.on{transform:translateY(-2px); background:#e2558f; color:#fff}
+  /* 출국 횟수 강조 카드 */
+  .stat.dep{background:linear-gradient(135deg,#e2558f,#f08bb0); box-shadow:0 8px 24px rgba(226,85,143,.35); color:#fff}
+  .stats-row{grid-template-columns:1.7fr 1fr 1fr}
+  .stat.dep b{color:#fff; font-size:54px}
+  .stat.dep b em{font-style:normal; font-size:20px; font-weight:700; margin-left:3px}
+  .stat.dep span{color:#fff; font-size:18px; font-weight:700}
+  /* 가장 많이 간 도시 */
+  .firsts{background:#fff; border-radius:18px; padding:16px 18px; box-shadow:0 2px 12px rgba(120,70,95,.06); display:flex; flex-direction:column; gap:6px; border:2px solid #fde8f0}
+  .firsts .k{font-size:14px; font-weight:800; color:#e2558f}
+  .firsts .fav{display:flex; align-items:baseline; justify-content:space-between; gap:12px}
+  .firsts .city{font-size:28px; font-weight:800; color:#2b3a6b}
+  .firsts .n{font-size:20px; font-weight:700; color:#9a8090; white-space:nowrap}
+  .firsts .n b{font-size:34px; color:#c2457a; margin-right:2px}
+  .years{background:#fff; border-radius:18px; padding:16px 18px 12px; box-shadow:0 2px 12px rgba(120,70,95,.06); flex:1; display:flex; flex-direction:column}
+  .years .k{font-size:12px; font-weight:800; letter-spacing:.14em; color:#9d8fb6}
+  .bars{flex:1; display:flex; align-items:flex-end; gap:8px; padding-top:10px}
+  .bar{flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end}
+  .bar b{font-size:12px; color:#c2457a}
+  .bar i{width:100%; max-width:30px; border-radius:7px 7px 3px 3px; background:linear-gradient(180deg,#f08bb0,#e2558f)}
+  .bar i.zero{background:#efe6ec}
+  .bar span{font-size:11px; color:#9a8090}
+  .chip{font-size:14px !important; padding:8px 12px !important}
+
+  /* 음악 */
+  .music{display:grid; grid-template-columns:300px minmax(0,1fr); gap:34px}
+  .album{display:flex; flex-direction:column; align-items:center; gap:16px}
+  .bigdisc{width:260px; height:260px; border-radius:50%; position:relative; background:conic-gradient(#d5e7ff,#ffd6f2,#d7fff1,#fff2c6,#d5e7ff);
+           box-shadow:0 18px 40px rgba(120,70,95,.25)}
+  .bigdisc::before{content:""; position:absolute; inset:36%; border-radius:50%; background:#fbf7fa; box-shadow:inset 0 0 0 12px rgba(255,255,255,.7)}
+  .bigdisc::after{content:""; position:absolute; inset:47%; border-radius:50%; background:#e3cfda}
+  .playing .bigdisc{animation:spin 3s linear infinite}
+  .now{text-align:center; color:#9a8090; font-size:14px; min-height:42px} .now b{display:block; color:#1d1d1f; font-size:18px}
+  .tracks{list-style:none; counter-reset:t}
+  .tracks li{display:flex; align-items:center; gap:14px; padding:14px 12px; border-radius:14px; cursor:pointer; border-bottom:1px solid #f3e8ee}
+  .tracks li:hover{background:#fdf0f5} .tracks li.on{background:#fde5ee}
+  .tracks li::before{counter-increment:t; content:counter(t); width:20px; font-size:14px; font-weight:700; color:#c3a9b6; text-align:center}
+  .tracks .t{flex:1; min-width:0} .tracks .t b{display:block; font-size:16px} .tracks .t span{font-size:13px; color:#9a8090}
+  .tracks .pl{color:#e2558f; font-size:14px}
+  .tv iframe{width:100%; height:100%; border:0; display:block}
+  #ytAudio{position:absolute; width:1px; height:1px; left:-9999px; top:0; opacity:0; pointer-events:none}
+  .ctrl{display:flex; align-items:center; gap:22px; margin-top:2px}
+  .ctrl button{width:44px; height:44px; border-radius:50%; display:grid; place-items:center; color:#c2457a; font-size:18px}
+  .ctrl button:hover{background:#fde8f0}
+  .ctrl .pp{width:60px; height:60px; background:linear-gradient(160deg,#ff8fb8,#ec5d93); color:#fff; font-size:22px; box-shadow:0 8px 20px rgba(236,93,147,.35)}
+  .ctrl .pp:hover{background:linear-gradient(160deg,#ff8fb8,#e14a85)}
+  .prog{width:260px; display:flex; flex-direction:column; gap:4px}
+  .prog .pbar{height:5px; border-radius:3px; background:#f0dfe7; cursor:pointer; position:relative; overflow:hidden}
+  .prog .pbar i{position:absolute; inset:0 auto 0 0; width:0; background:#e2558f; border-radius:3px}
+  .prog .tm{display:flex; justify-content:space-between; font-size:11px; color:#b0a0aa; font-variant-numeric:tabular-nums}
+  .tracks li.on .pl{animation:eq .8s ease-in-out infinite} @keyframes eq{50%{opacity:.35}}
+  .pnote{font-size:13px; color:#9a8090; margin-top:10px; min-height:18px}
+
+  /* 영상: OTT 스타일 (다크) */
+  .appview.dark{background:#111014; color:#fff}
+  .appview.dark .nav{background:rgba(17,16,20,.92); border-color:#26222b}
+  .appview.dark .nav h1{font-weight:900; letter-spacing:.04em; background:linear-gradient(90deg,#ff4f8b,#ffa36c); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .appview.dark .nav p{color:#8d8396} .appview.dark .done{color:#ff6fa0}
+  .hero{position:relative; height:320px; border-radius:20px; overflow:hidden; display:flex; align-items:flex-end; padding:30px; background:#000 !important;
+        background:linear-gradient(90deg,rgba(17,16,20,.92) 0%,rgba(17,16,20,.35) 55%,transparent), linear-gradient(160deg,#8f86d6,#d9a9d6 50%,#ffc3c2)}
+  .hero-art{position:absolute; inset:0} .hero-art svg,.hero-art img{width:100%; height:100%; object-fit:cover; display:block}
+  .hero-art::after{content:''; position:absolute; inset:0; background:linear-gradient(90deg,rgba(17,16,20,.95) 0%,rgba(17,16,20,.6) 40%,transparent 75%), linear-gradient(0deg,rgba(17,16,20,.6),transparent 40%)}
+  .hero-txt{position:relative; z-index:1} .hero .hsub{font-size:14px; color:#b9adc6; margin-bottom:8px}
+  .hero .tag{font-size:12px; font-weight:800; letter-spacing:.2em; color:#ff8fb3}
+  .hero h2{font-size:40px; font-weight:900; margin:6px 0 6px; letter-spacing:-.01em}
+  .hero p{color:#d9d0e0; font-size:15px; max-width:440px; word-break:normal; line-break:strict}
+  .hero .btns{display:flex; gap:10px; margin-top:16px}
+  .hero .play{background:#fff; color:#111; font-weight:800; padding:10px 22px; border-radius:8px; font-size:16px}
+  .hero .info{background:rgba(255,255,255,.18); color:#fff; font-weight:700; padding:10px 18px; border-radius:8px; font-size:16px}
+  .row{margin-top:28px} .row h3{font-size:20px; font-weight:800; margin-bottom:12px}
+  .posters{display:flex; gap:14px; overflow-x:auto; padding-bottom:8px; scrollbar-width:none} .posters::-webkit-scrollbar{display:none}
+  .poster{flex:0 0 160px; aspect-ratio:2/3; border-radius:10px; overflow:hidden; position:relative; cursor:pointer; transition:transform .25s; text-align:left}
+  .poster:hover{transform:scale(1.05)}
+  .poster .art{position:absolute; inset:0} .poster .art svg,.poster .art img{width:100%; height:100%; object-fit:cover; display:block}
+  .poster .cap{position:absolute; inset:auto 0 0 0; padding:40px 10px 10px; background:linear-gradient(transparent,rgba(0,0,0,.75)); font-size:14px; font-weight:800; line-height:1.3}
+  .poster .cap{word-break:normal; line-break:strict; font-size:13.5px !important}
+  .poster .cap small{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .poster .cap em{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-style:normal; font-size:10px; font-weight:700; opacity:.7; letter-spacing:.06em; margin-bottom:2px}
+  .poster .cap small{display:block; font-size:11px; font-weight:500; opacity:.8}
+  .bar-prog{position:absolute; left:10px; right:10px; bottom:6px; height:3px; border-radius:2px; background:rgba(255,255,255,.3)}
+  .bar-prog i{display:block; height:100%; border-radius:2px; background:#ff4f8b}
+  .watch{position:absolute; inset:0; z-index:35; border-radius:32px; background:rgba(0,0,0,.97); display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:40px}
+  .watch.open{display:flex}
+  .watch .screenbox{width:min(900px,100%); aspect-ratio:16/9; border-radius:14px; overflow:hidden; background:#000; position:relative}
+  .watch iframe{width:100%; height:100%; border:0; display:block}
+  .watch .nosig{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:#fff; font-weight:800; font-size:20px;
+                background:linear-gradient(160deg,#8f86d6,#d9a9d6 55%,#ffc3c2)}
+  .watch .nosig small{font-weight:500; font-size:14px; opacity:.9}
+  .watch .x{position:absolute; top:20px; right:24px; color:#fff; font-size:16px; font-weight:700; background:rgba(255,255,255,.15); padding:8px 16px; border-radius:999px}
+  .ic svg.ott{stroke-linecap:round; stroke-linejoin:round}
+
+  /* 고양이: 레오 */
+  .ic img.photo-ic{width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block}
+  .catpane{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:6px; user-select:none; -webkit-user-select:none;
+           }
+  .leo-wrap{position:relative; width:360px; height:480px; margin-top:34px; cursor:pointer; -webkit-tap-highlight-color:transparent; perspective:900px}
+  .leo{position:absolute; inset:0; border-radius:28px; overflow:hidden; box-shadow:0 18px 40px rgba(120,80,100,.22), 0 0 0 6px #fff;
+       transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)); transition:transform .35s ease-out}
+  .leo img{width:100%; height:100%; object-fit:cover; display:block; pointer-events:none; -webkit-user-drag:none}
+  .leo-float{position:absolute; inset:0; animation:float 4s ease-in-out infinite}
+  @keyframes float{50%{transform:translateY(-6px)}}
+  .leo-wrap.hop .leo-float{animation:hop .45s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes hop{0%{transform:none} 30%{transform:scale(.97)} 60%{transform:translateY(-16px) rotate(-1.5deg)} 100%{transform:none}}
+  .leo-wrap.purr .leo-float{animation:purr .12s linear infinite}
+  @keyframes purr{50%{transform:translateX(2px) rotate(.4deg)}}
+  .bubble{position:absolute; left:86%; top:5%; background:#fff; color:#d0487f; font-weight:800; font-size:22px; padding:10px 18px; border-radius:20px 20px 20px 6px;
+          box-shadow:0 6px 20px rgba(200,80,130,.18); white-space:nowrap; opacity:0; transform:translateY(8px) scale(.8); transition:opacity .2s, transform .25s cubic-bezier(.3,1.6,.5,1); pointer-events:none; z-index:3}
+  .bubble.show{opacity:1; transform:none}
+  .leo-name{display:flex; align-items:center; gap:10px; margin-top:14px}
+  .leo-name b{font-size:22px; color:#4b3a45} .leo-name span{font-size:13px; color:#b98aa0; font-weight:700; letter-spacing:.12em}
+  .leo-count{font-size:14px; color:#9a8090; min-height:20px}
+  .leo-count em{font-style:normal; color:#d0487f; font-weight:800}
+  .snd{position:absolute; right:22px; bottom:20px; font-size:13px; color:#9a8090; background:#fff; border-radius:999px; padding:7px 13px; box-shadow:0 2px 10px rgba(120,70,95,.08)}
+  .pop{position:absolute; pointer-events:none; font-size:24px; z-index:4; animation:pop 1.1s ease-out forwards}
+  @keyframes pop{0%{transform:translate(-50%,-50%) scale(.4); opacity:0} 15%{opacity:1; transform:translate(-50%,-50%) scale(1.1)} 100%{transform:translate(calc(-50% + var(--dx)), calc(-50% - 110px)) scale(.9) rotate(var(--r)); opacity:0}}
+
+  .viewer{position:absolute; inset:0; z-index:40; background:rgba(0,0,0,.85); display:none; flex-direction:column; align-items:center; justify-content:center; gap:10px; cursor:zoom-out}
+  .viewer.open{display:flex} .viewer img{max-width:90%; max-height:80%; border-radius:12px} .viewer p{color:#fff}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+</style>
+</head>
+<body>
+<div class="stage"><div class="device" id="device"><div class="screen" id="screen">
+<svg class="wall" viewBox="0 0 1180 820" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#8f86d6"/><stop offset=".38" stop-color="#d9a9d6"/><stop offset=".66" stop-color="#ffc3c2"/><stop offset=".85" stop-color="#ffdcb9"/>
+  </linearGradient>
+  <radialGradient id="sunGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff2d4"/><stop offset=".4" stop-color="#ffd8b6" stop-opacity=".75"/><stop offset="1" stop-color="#ffd0c0" stop-opacity="0"/></radialGradient>
+  <linearGradient id="street" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9ac0" stop-opacity="0"/><stop offset="1" stop-color="#ffb08a" stop-opacity=".55"/></linearGradient>
+</defs>
+<rect width="1180" height="820" fill="url(#sky)"/>
+<circle class="star" cx="958" cy="166" r="1.3" fill="#fff" style="animation-delay:1.1s"/><circle class="star" cx="391" cy="183" r="1" fill="#fff" style="animation-delay:1.4s"/><circle class="star" cx="959" cy="164" r="1" fill="#fff" style="animation-delay:1.3s"/><circle class="star" cx="93" cy="196" r="1.3" fill="#fff" style="animation-delay:0.7s"/><circle class="star" cx="935" cy="195" r="1.3" fill="#fff" style="animation-delay:0.6s"/><circle class="star" cx="497" cy="23" r="1" fill="#fff" style="animation-delay:0.5s"/><circle class="star" cx="139" cy="186" r="1.3" fill="#fff" style="animation-delay:3.2s"/><circle class="star" cx="218" cy="84" r="1" fill="#fff" style="animation-delay:2.7s"/><circle class="star" cx="873" cy="32" r="1.3" fill="#fff" style="animation-delay:3.6s"/><circle class="star" cx="822" cy="81" r="1.3" fill="#fff" style="animation-delay:3.2s"/><circle class="star" cx="418" cy="191" r="1" fill="#fff" style="animation-delay:3.5s"/><circle class="star" cx="122" cy="106" r="1.3" fill="#fff" style="animation-delay:0.6s"/><circle class="star" cx="494" cy="118" r="1.6" fill="#fff" style="animation-delay:3.6s"/><circle class="star" cx="239" cy="162" r="1" fill="#fff" style="animation-delay:0.5s"/><circle class="star" cx="414" cy="61" r="1.3" fill="#fff" style="animation-delay:0.0s"/><circle class="star" cx="181" cy="44" r="1.6" fill="#fff" style="animation-delay:3.7s"/><circle class="star" cx="1035" cy="31" r="1.6" fill="#fff" style="animation-delay:2.0s"/><circle class="star" cx="415" cy="117" r="1" fill="#fff" style="animation-delay:1.6s"/><circle class="star" cx="201" cy="189" r="1.6" fill="#fff" style="animation-delay:0.6s"/><circle class="star" cx="94" cy="23" r="1.3" fill="#fff" style="animation-delay:2.2s"/><circle class="star" cx="315" cy="200" r="1.3" fill="#fff" style="animation-delay:2.9s"/><circle class="star" cx="80" cy="41" r="1.6" fill="#fff" style="animation-delay:1.6s"/><circle class="star" cx="494" cy="51" r="1.6" fill="#fff" style="animation-delay:2.0s"/><circle class="star" cx="759" cy="182" r="1.6" fill="#fff" style="animation-delay:2.4s"/><circle class="star" cx="187" cy="98" r="1" fill="#fff" style="animation-delay:3.5s"/><circle class="star" cx="758" cy="125" r="1" fill="#fff" style="animation-delay:1.6s"/><circle class="star" cx="47" cy="107" r="1.6" fill="#fff" style="animation-delay:1.3s"/><circle class="star" cx="897" cy="38" r="1" fill="#fff" style="animation-delay:0.9s"/><circle class="star" cx="562" cy="93" r="1" fill="#fff" style="animation-delay:1.2s"/><circle class="star" cx="593" cy="36" r="1.6" fill="#fff" style="animation-delay:3.1s"/><circle class="star" cx="62" cy="107" r="1.6" fill="#fff" style="animation-delay:3.2s"/><circle class="star" cx="1028" cy="98" r="1.6" fill="#fff" style="animation-delay:3.1s"/><circle class="star" cx="1169" cy="198" r="1" fill="#fff" style="animation-delay:1.7s"/><circle class="star" cx="482" cy="34" r="1.3" fill="#fff" style="animation-delay:2.0s"/><circle class="star" cx="1157" cy="104" r="1" fill="#fff" style="animation-delay:2.7s"/><circle class="star" cx="360" cy="187" r="1.3" fill="#fff" style="animation-delay:0.1s"/><circle class="star" cx="363" cy="77" r="1" fill="#fff" style="animation-delay:3.9s"/><circle class="star" cx="313" cy="13" r="1" fill="#fff" style="animation-delay:0.2s"/><circle class="star" cx="437" cy="109" r="1.3" fill="#fff" style="animation-delay:2.4s"/><circle class="star" cx="736" cy="82" r="1" fill="#fff" style="animation-delay:1.9s"/>
+<circle cx="820" cy="560" r="230" fill="url(#sunGlow)"/>
+<circle cx="820" cy="560" r="56" fill="#fff1d2"/>
+<g class="drift d1"><g transform="translate(260 170) scale(2.1)"><path d="M-48 8 Q-50 -8 -30 -8 Q-26 -26 -6 -22 Q4 -36 22 -24 Q40 -26 40 -8 Q54 -6 50 8 Z" fill="#fff7fb"/><path d="M-44 6 Q0 14 46 6" fill="none" stroke="#f3c6da" stroke-width="5" stroke-linecap="round" opacity=".8"/></g></g><g class="drift d2"><g transform="translate(700 120) scale(1.6)"><path d="M-48 8 Q-50 -8 -30 -8 Q-26 -26 -6 -22 Q4 -36 22 -24 Q40 -26 40 -8 Q54 -6 50 8 Z" fill="#fff7fb"/><path d="M-44 6 Q0 14 46 6" fill="none" stroke="#f3c6da" stroke-width="5" stroke-linecap="round" opacity=".8"/></g></g><g class="drift d3"><g transform="translate(1000 250) scale(1.3)"><path d="M-48 8 Q-50 -8 -30 -8 Q-26 -26 -6 -22 Q4 -36 22 -24 Q40 -26 40 -8 Q54 -6 50 8 Z" fill="#fff7fb"/><path d="M-44 6 Q0 14 46 6" fill="none" stroke="#f3c6da" stroke-width="5" stroke-linecap="round" opacity=".8"/></g></g><g class="drift d2"><g transform="translate(480 300) scale(1.1)"><path d="M-48 8 Q-50 -8 -30 -8 Q-26 -26 -6 -22 Q4 -36 22 -24 Q40 -26 40 -8 Q54 -6 50 8 Z" fill="#fff7fb"/><path d="M-44 6 Q0 14 46 6" fill="none" stroke="#f3c6da" stroke-width="5" stroke-linecap="round" opacity=".8"/></g></g>
+<g fill="none" stroke="#7d6b9c" stroke-width="2.4" stroke-linecap="round" class="birds"><path d="M600 230 q8 -8 16 0 q8 -8 16 0"/><path d="M650 254 q6 -6 12 0 q6 -6 12 0"/></g>
+<rect x="-10" y="507" width="63" height="265" fill="#d9caef"/>
+<rect x="41" y="507" width="12" height="265" fill="#c8b5e6"/>
+<rect x="-10" y="507" width="63" height="3" fill="#efe5fb"/>
+<rect class="lit" x="34" y="521" width="6" height="8" fill="#fff3c2" style="animation-delay:3.4s"/>
+<rect class="lit" x="-2" y="537" width="6" height="8" fill="#fff3c2" style="animation-delay:4.5s"/>
+<rect class="lit" x="34" y="569" width="6" height="8" fill="#fff3c2" style="animation-delay:6.4s"/>
+<rect class="lit" x="10" y="585" width="6" height="8" fill="#fff3c2" style="animation-delay:6.3s"/>
+<rect class="lit" x="34" y="585" width="6" height="8" fill="#fff3c2" style="animation-delay:3.8s"/>
+<rect class="lit" x="22" y="601" width="6" height="8" fill="#fff3c2" style="animation-delay:4.4s"/>
+<rect class="lit" x="10" y="617" width="6" height="8" fill="#fff3c2" style="animation-delay:5.2s"/>
+<rect class="lit" x="-2" y="665" width="6" height="8" fill="#fff3c2" style="animation-delay:1.8s"/>
+<rect class="lit" x="10" y="665" width="6" height="8" fill="#fff3c2" style="animation-delay:0.8s"/>
+<rect class="lit" x="34" y="665" width="6" height="8" fill="#fff3c2" style="animation-delay:7.1s"/>
+<rect class="lit" x="22" y="681" width="6" height="8" fill="#fff3c2" style="animation-delay:1.9s"/>
+<rect x="58" y="383" width="48" height="389" fill="#d9caef"/>
+<rect x="94" y="383" width="12" height="389" fill="#c8b5e6"/>
+<rect x="58" y="383" width="48" height="3" fill="#efe5fb"/>
+<rect class="lit" x="66" y="429" width="6" height="8" fill="#fff3c2" style="animation-delay:1.5s"/>
+<rect class="lit" x="66" y="445" width="6" height="8" fill="#fff3c2" style="animation-delay:0.5s"/>
+<rect class="lit" x="66" y="477" width="6" height="8" fill="#fff3c2" style="animation-delay:6.2s"/>
+<rect class="lit" x="78" y="493" width="6" height="8" fill="#fff3c2" style="animation-delay:7.6s"/>
+<rect class="lit" x="66" y="541" width="6" height="8" fill="#fff3c2" style="animation-delay:2.8s"/>
+<rect class="lit" x="78" y="541" width="6" height="8" fill="#fff3c2" style="animation-delay:6.2s"/>
+<rect class="lit" x="66" y="557" width="6" height="8" fill="#fff3c2" style="animation-delay:1.8s"/>
+<rect class="lit" x="78" y="557" width="6" height="8" fill="#fff3c2" style="animation-delay:1.0s"/>
+<rect class="lit" x="66" y="637" width="6" height="8" fill="#fff3c2" style="animation-delay:2.1s"/>
+<rect class="lit" x="66" y="653" width="6" height="8" fill="#fff3c2" style="animation-delay:3.5s"/>
+<rect class="lit" x="66" y="669" width="6" height="8" fill="#fff3c2" style="animation-delay:0.8s"/>
+<rect class="lit" x="66" y="685" width="6" height="8" fill="#fff3c2" style="animation-delay:2.0s"/>
+<rect x="111" y="368" width="49" height="404" fill="#d9caef"/>
+<rect x="148" y="368" width="12" height="404" fill="#c8b5e6"/>
+<rect x="111" y="368" width="49" height="3" fill="#efe5fb"/>
+<rect class="lit" x="131" y="430" width="6" height="8" fill="#fff3c2" style="animation-delay:2.5s"/>
+<rect class="lit" x="143" y="462" width="6" height="8" fill="#fff3c2" style="animation-delay:2.2s"/>
+<rect class="lit" x="131" y="494" width="6" height="8" fill="#fff3c2" style="animation-delay:3.2s"/>
+<rect class="lit" x="119" y="510" width="6" height="8" fill="#fff3c2" style="animation-delay:4.4s"/>
+<rect class="lit" x="131" y="510" width="6" height="8" fill="#fff3c2" style="animation-delay:5.7s"/>
+<rect class="lit" x="119" y="526" width="6" height="8" fill="#fff3c2" style="animation-delay:5.0s"/>
+<rect class="lit" x="131" y="558" width="6" height="8" fill="#fff3c2" style="animation-delay:4.3s"/>
+<rect class="lit" x="119" y="574" width="6" height="8" fill="#fff3c2" style="animation-delay:4.4s"/>
+<rect class="lit" x="119" y="606" width="6" height="8" fill="#fff3c2" style="animation-delay:5.7s"/>
+<rect class="lit" x="119" y="622" width="6" height="8" fill="#fff3c2" style="animation-delay:0.1s"/>
+<rect class="lit" x="143" y="622" width="6" height="8" fill="#fff3c2" style="animation-delay:1.2s"/>
+<rect class="lit" x="119" y="638" width="6" height="8" fill="#fff3c2" style="animation-delay:0.8s"/>
+<rect class="lit" x="131" y="670" width="6" height="8" fill="#fff3c2" style="animation-delay:5.5s"/>
+<rect x="164" y="396" width="57" height="376" fill="#d9caef"/>
+<rect x="209" y="396" width="12" height="376" fill="#c8b5e6"/>
+<rect x="164" y="396" width="57" height="3" fill="#efe5fb"/>
+<rect class="lit" x="172" y="410" width="6" height="8" fill="#fff3c2" style="animation-delay:2.4s"/>
+<rect class="lit" x="184" y="442" width="6" height="8" fill="#fff3c2" style="animation-delay:2.3s"/>
+<rect class="lit" x="196" y="458" width="6" height="8" fill="#fff3c2" style="animation-delay:1.2s"/>
+<rect class="lit" x="196" y="474" width="6" height="8" fill="#fff3c2" style="animation-delay:2.2s"/>
+<rect class="lit" x="196" y="522" width="6" height="8" fill="#fff3c2" style="animation-delay:3.4s"/>
+<rect class="lit" x="172" y="554" width="6" height="8" fill="#fff3c2" style="animation-delay:4.4s"/>
+<rect class="lit" x="184" y="554" width="6" height="8" fill="#fff3c2" style="animation-delay:6.2s"/>
+<rect class="lit" x="172" y="602" width="6" height="8" fill="#fff3c2" style="animation-delay:0.8s"/>
+<rect class="lit" x="184" y="602" width="6" height="8" fill="#fff3c2" style="animation-delay:4.7s"/>
+<rect class="lit" x="196" y="634" width="6" height="8" fill="#fff3c2" style="animation-delay:5.3s"/>
+<rect class="lit" x="184" y="650" width="6" height="8" fill="#fff3c2" style="animation-delay:8.0s"/>
+<rect class="lit" x="196" y="650" width="6" height="8" fill="#fff3c2" style="animation-delay:5.7s"/>
+<rect class="lit" x="184" y="698" width="6" height="8" fill="#fff3c2" style="animation-delay:6.6s"/>
+<rect x="230" y="462" width="48" height="310" fill="#d9caef"/>
+<rect x="266" y="462" width="12" height="310" fill="#c8b5e6"/>
+<rect x="230" y="462" width="48" height="3" fill="#efe5fb"/>
+<rect class="lit" x="238" y="476" width="6" height="8" fill="#fff3c2" style="animation-delay:1.2s"/>
+<rect class="lit" x="238" y="492" width="6" height="8" fill="#fff3c2" style="animation-delay:5.3s"/>
+<rect class="lit" x="238" y="540" width="6" height="8" fill="#fff3c2" style="animation-delay:3.0s"/>
+<rect class="lit" x="250" y="572" width="6" height="8" fill="#fff3c2" style="animation-delay:6.8s"/>
+<rect class="lit" x="250" y="588" width="6" height="8" fill="#fff3c2" style="animation-delay:7.7s"/>
+<rect class="lit" x="250" y="636" width="6" height="8" fill="#fff3c2" style="animation-delay:1.6s"/>
+<rect class="lit" x="238" y="652" width="6" height="8" fill="#fff3c2" style="animation-delay:4.2s"/>
+<rect class="lit" x="250" y="668" width="6" height="8" fill="#fff3c2" style="animation-delay:0.1s"/>
+<rect class="lit" x="250" y="684" width="6" height="8" fill="#fff3c2" style="animation-delay:2.5s"/>
+<rect x="283" y="497" width="46" height="275" fill="#d9caef"/>
+<rect x="317" y="497" width="12" height="275" fill="#c8b5e6"/>
+<rect x="283" y="497" width="46" height="3" fill="#efe5fb"/>
+<rect class="lit" x="291" y="559" width="6" height="8" fill="#fff3c2" style="animation-delay:5.4s"/>
+<rect class="lit" x="303" y="559" width="6" height="8" fill="#fff3c2" style="animation-delay:7.8s"/>
+<rect class="lit" x="291" y="575" width="6" height="8" fill="#fff3c2" style="animation-delay:1.7s"/>
+<rect class="lit" x="303" y="623" width="6" height="8" fill="#fff3c2" style="animation-delay:3.3s"/>
+<rect class="lit" x="303" y="639" width="6" height="8" fill="#fff3c2" style="animation-delay:1.9s"/>
+<rect class="lit" x="291" y="655" width="6" height="8" fill="#fff3c2" style="animation-delay:4.6s"/>
+<rect class="lit" x="303" y="671" width="6" height="8" fill="#fff3c2" style="animation-delay:5.1s"/>
+<rect x="337" y="501" width="48" height="271" fill="#d9caef"/>
+<rect x="373" y="501" width="12" height="271" fill="#c8b5e6"/>
+<rect x="337" y="501" width="48" height="3" fill="#efe5fb"/>
+<rect class="lit" x="357" y="563" width="6" height="8" fill="#fff3c2" style="animation-delay:7.0s"/>
+<rect class="lit" x="345" y="595" width="6" height="8" fill="#fff3c2" style="animation-delay:2.1s"/>
+<rect class="lit" x="345" y="611" width="6" height="8" fill="#fff3c2" style="animation-delay:7.6s"/>
+<rect class="lit" x="357" y="627" width="6" height="8" fill="#fff3c2" style="animation-delay:5.2s"/>
+<rect class="lit" x="357" y="659" width="6" height="8" fill="#fff3c2" style="animation-delay:3.5s"/>
+<rect x="394" y="387" width="56" height="385" fill="#d9caef"/>
+<rect x="438" y="387" width="12" height="385" fill="#c8b5e6"/>
+<rect x="394" y="387" width="56" height="3" fill="#efe5fb"/>
+<rect class="lit" x="402" y="401" width="6" height="8" fill="#fff3c2" style="animation-delay:2.3s"/>
+<rect class="lit" x="414" y="401" width="6" height="8" fill="#fff3c2" style="animation-delay:1.0s"/>
+<rect class="lit" x="402" y="417" width="6" height="8" fill="#fff3c2" style="animation-delay:4.9s"/>
+<rect class="lit" x="414" y="433" width="6" height="8" fill="#fff3c2" style="animation-delay:7.1s"/>
+<rect class="lit" x="414" y="449" width="6" height="8" fill="#fff3c2" style="animation-delay:6.0s"/>
+<rect class="lit" x="402" y="465" width="6" height="8" fill="#fff3c2" style="animation-delay:3.8s"/>
+<rect class="lit" x="402" y="529" width="6" height="8" fill="#fff3c2" style="animation-delay:3.3s"/>
+<rect class="lit" x="402" y="545" width="6" height="8" fill="#fff3c2" style="animation-delay:3.8s"/>
+<rect class="lit" x="402" y="561" width="6" height="8" fill="#fff3c2" style="animation-delay:5.2s"/>
+<rect class="lit" x="426" y="577" width="6" height="8" fill="#fff3c2" style="animation-delay:2.3s"/>
+<rect class="lit" x="414" y="593" width="6" height="8" fill="#fff3c2" style="animation-delay:7.7s"/>
+<rect class="lit" x="414" y="609" width="6" height="8" fill="#fff3c2" style="animation-delay:0.1s"/>
+<rect class="lit" x="402" y="657" width="6" height="8" fill="#fff3c2" style="animation-delay:7.8s"/>
+<rect x="456" y="339" width="65" height="433" fill="#d9caef"/>
+<rect x="509" y="339" width="12" height="433" fill="#c8b5e6"/>
+<rect x="456" y="339" width="65" height="3" fill="#efe5fb"/>
+<rect class="lit" x="464" y="353" width="6" height="8" fill="#fff3c2" style="animation-delay:3.1s"/>
+<rect class="lit" x="500" y="353" width="6" height="8" fill="#fff3c2" style="animation-delay:2.4s"/>
+<rect class="lit" x="500" y="369" width="6" height="8" fill="#fff3c2" style="animation-delay:5.5s"/>
+<rect class="lit" x="464" y="385" width="6" height="8" fill="#fff3c2" style="animation-delay:0.6s"/>
+<rect class="lit" x="476" y="385" width="6" height="8" fill="#fff3c2" style="animation-delay:5.3s"/>
+<rect class="lit" x="500" y="385" width="6" height="8" fill="#fff3c2" style="animation-delay:7.1s"/>
+<rect class="lit" x="488" y="401" width="6" height="8" fill="#fff3c2" style="animation-delay:6.7s"/>
+<rect class="lit" x="476" y="417" width="6" height="8" fill="#fff3c2" style="animation-delay:6.9s"/>
+<rect class="lit" x="488" y="417" width="6" height="8" fill="#fff3c2" style="animation-delay:5.0s"/>
+<rect class="lit" x="464" y="433" width="6" height="8" fill="#fff3c2" style="animation-delay:5.6s"/>
+<rect class="lit" x="488" y="433" width="6" height="8" fill="#fff3c2" style="animation-delay:4.5s"/>
+<rect class="lit" x="500" y="433" width="6" height="8" fill="#fff3c2" style="animation-delay:7.7s"/>
+<rect class="lit" x="500" y="449" width="6" height="8" fill="#fff3c2" style="animation-delay:2.1s"/>
+<rect class="lit" x="464" y="465" width="6" height="8" fill="#fff3c2" style="animation-delay:5.9s"/>
+<rect class="lit" x="476" y="481" width="6" height="8" fill="#fff3c2" style="animation-delay:0.8s"/>
+<rect class="lit" x="488" y="497" width="6" height="8" fill="#fff3c2" style="animation-delay:6.5s"/>
+<rect class="lit" x="500" y="497" width="6" height="8" fill="#fff3c2" style="animation-delay:4.4s"/>
+<rect class="lit" x="476" y="513" width="6" height="8" fill="#fff3c2" style="animation-delay:0.0s"/>
+<rect class="lit" x="464" y="545" width="6" height="8" fill="#fff3c2" style="animation-delay:3.6s"/>
+<rect class="lit" x="476" y="561" width="6" height="8" fill="#fff3c2" style="animation-delay:4.9s"/>
+<rect class="lit" x="464" y="577" width="6" height="8" fill="#fff3c2" style="animation-delay:4.5s"/>
+<rect class="lit" x="488" y="577" width="6" height="8" fill="#fff3c2" style="animation-delay:5.5s"/>
+<rect class="lit" x="488" y="609" width="6" height="8" fill="#fff3c2" style="animation-delay:1.2s"/>
+<rect class="lit" x="500" y="609" width="6" height="8" fill="#fff3c2" style="animation-delay:4.0s"/>
+<rect class="lit" x="464" y="625" width="6" height="8" fill="#fff3c2" style="animation-delay:4.2s"/>
+<rect class="lit" x="476" y="625" width="6" height="8" fill="#fff3c2" style="animation-delay:7.5s"/>
+<rect class="lit" x="488" y="625" width="6" height="8" fill="#fff3c2" style="animation-delay:4.6s"/>
+<rect class="lit" x="464" y="641" width="6" height="8" fill="#fff3c2" style="animation-delay:1.8s"/>
+<rect class="lit" x="500" y="641" width="6" height="8" fill="#fff3c2" style="animation-delay:5.3s"/>
+<rect class="lit" x="488" y="657" width="6" height="8" fill="#fff3c2" style="animation-delay:5.4s"/>
+<rect class="lit" x="488" y="673" width="6" height="8" fill="#fff3c2" style="animation-delay:6.1s"/>
+<rect class="lit" x="476" y="689" width="6" height="8" fill="#fff3c2" style="animation-delay:6.9s"/>
+<rect x="526" y="336" width="65" height="436" fill="#d9caef"/>
+<rect x="579" y="336" width="12" height="436" fill="#c8b5e6"/>
+<rect x="526" y="336" width="65" height="3" fill="#efe5fb"/>
+<rect class="lit" x="558" y="350" width="6" height="8" fill="#fff3c2" style="animation-delay:4.4s"/>
+<rect class="lit" x="558" y="366" width="6" height="8" fill="#fff3c2" style="animation-delay:0.7s"/>
+<rect class="lit" x="546" y="398" width="6" height="8" fill="#fff3c2" style="animation-delay:7.2s"/>
+<rect class="lit" x="546" y="414" width="6" height="8" fill="#fff3c2" style="animation-delay:2.9s"/>
+<rect class="lit" x="558" y="414" width="6" height="8" fill="#fff3c2" style="animation-delay:1.2s"/>
+<rect class="lit" x="534" y="430" width="6" height="8" fill="#fff3c2" style="animation-delay:2.1s"/>
+<rect class="lit" x="558" y="430" width="6" height="8" fill="#fff3c2" style="animation-delay:0.2s"/>
+<rect class="lit" x="570" y="430" width="6" height="8" fill="#fff3c2" style="animation-delay:0.0s"/>
+<rect class="lit" x="558" y="446" width="6" height="8" fill="#fff3c2" style="animation-delay:7.9s"/>
+<rect class="lit" x="558" y="478" width="6" height="8" fill="#fff3c2" style="animation-delay:3.8s"/>
+<rect class="lit" x="534" y="494" width="6" height="8" fill="#fff3c2" style="animation-delay:4.6s"/>
+<rect class="lit" x="546" y="494" width="6" height="8" fill="#fff3c2" style="animation-delay:1.3s"/>
+<rect class="lit" x="558" y="494" width="6" height="8" fill="#fff3c2" style="animation-delay:3.0s"/>
+<rect class="lit" x="570" y="494" width="6" height="8" fill="#fff3c2" style="animation-delay:3.7s"/>
+<rect class="lit" x="534" y="510" width="6" height="8" fill="#fff3c2" style="animation-delay:0.3s"/>
+<rect class="lit" x="546" y="510" width="6" height="8" fill="#fff3c2" style="animation-delay:2.9s"/>
+<rect class="lit" x="570" y="526" width="6" height="8" fill="#fff3c2" style="animation-delay:6.3s"/>
+<rect class="lit" x="558" y="558" width="6" height="8" fill="#fff3c2" style="animation-delay:7.0s"/>
+<rect class="lit" x="546" y="606" width="6" height="8" fill="#fff3c2" style="animation-delay:2.7s"/>
+<rect class="lit" x="534" y="638" width="6" height="8" fill="#fff3c2" style="animation-delay:7.9s"/>
+<rect class="lit" x="558" y="638" width="6" height="8" fill="#fff3c2" style="animation-delay:3.4s"/>
+<rect class="lit" x="546" y="654" width="6" height="8" fill="#fff3c2" style="animation-delay:4.8s"/>
+<rect class="lit" x="534" y="686" width="6" height="8" fill="#fff3c2" style="animation-delay:2.9s"/>
+<rect x="593" y="455" width="72" height="317" fill="#d9caef"/>
+<rect x="653" y="455" width="12" height="317" fill="#c8b5e6"/>
+<rect x="593" y="455" width="72" height="3" fill="#efe5fb"/>
+<rect class="lit" x="637" y="469" width="6" height="8" fill="#fff3c2" style="animation-delay:7.7s"/>
+<rect class="lit" x="637" y="485" width="6" height="8" fill="#fff3c2" style="animation-delay:3.4s"/>
+<rect class="lit" x="625" y="501" width="6" height="8" fill="#fff3c2" style="animation-delay:7.1s"/>
+<rect class="lit" x="613" y="533" width="6" height="8" fill="#fff3c2" style="animation-delay:4.7s"/>
+<rect class="lit" x="601" y="549" width="6" height="8" fill="#fff3c2" style="animation-delay:1.6s"/>
+<rect class="lit" x="625" y="565" width="6" height="8" fill="#fff3c2" style="animation-delay:0.5s"/>
+<rect class="lit" x="637" y="581" width="6" height="8" fill="#fff3c2" style="animation-delay:1.1s"/>
+<rect class="lit" x="613" y="597" width="6" height="8" fill="#fff3c2" style="animation-delay:6.0s"/>
+<rect class="lit" x="601" y="613" width="6" height="8" fill="#fff3c2" style="animation-delay:2.4s"/>
+<rect class="lit" x="637" y="613" width="6" height="8" fill="#fff3c2" style="animation-delay:7.6s"/>
+<rect class="lit" x="601" y="629" width="6" height="8" fill="#fff3c2" style="animation-delay:1.9s"/>
+<rect class="lit" x="601" y="645" width="6" height="8" fill="#fff3c2" style="animation-delay:0.5s"/>
+<rect class="lit" x="601" y="677" width="6" height="8" fill="#fff3c2" style="animation-delay:3.0s"/>
+<rect class="lit" x="625" y="677" width="6" height="8" fill="#fff3c2" style="animation-delay:2.6s"/>
+<rect class="lit" x="637" y="677" width="6" height="8" fill="#fff3c2" style="animation-delay:7.0s"/>
+<rect class="lit" x="625" y="693" width="6" height="8" fill="#fff3c2" style="animation-delay:2.5s"/>
+<rect x="667" y="352" width="75" height="420" fill="#d9caef"/>
+<rect x="730" y="352" width="12" height="420" fill="#c8b5e6"/>
+<rect x="667" y="352" width="75" height="3" fill="#efe5fb"/>
+<rect class="lit" x="711" y="366" width="6" height="8" fill="#fff3c2" style="animation-delay:6.9s"/>
+<rect class="lit" x="675" y="398" width="6" height="8" fill="#fff3c2" style="animation-delay:4.3s"/>
+<rect class="lit" x="711" y="398" width="6" height="8" fill="#fff3c2" style="animation-delay:5.7s"/>
+<rect class="lit" x="723" y="398" width="6" height="8" fill="#fff3c2" style="animation-delay:0.4s"/>
+<rect class="lit" x="675" y="414" width="6" height="8" fill="#fff3c2" style="animation-delay:7.8s"/>
+<rect class="lit" x="687" y="414" width="6" height="8" fill="#fff3c2" style="animation-delay:5.5s"/>
+<rect class="lit" x="699" y="414" width="6" height="8" fill="#fff3c2" style="animation-delay:4.8s"/>
+<rect class="lit" x="711" y="414" width="6" height="8" fill="#fff3c2" style="animation-delay:4.8s"/>
+<rect class="lit" x="711" y="430" width="6" height="8" fill="#fff3c2" style="animation-delay:0.4s"/>
+<rect class="lit" x="723" y="430" width="6" height="8" fill="#fff3c2" style="animation-delay:3.6s"/>
+<rect class="lit" x="687" y="446" width="6" height="8" fill="#fff3c2" style="animation-delay:1.6s"/>
+<rect class="lit" x="723" y="446" width="6" height="8" fill="#fff3c2" style="animation-delay:2.3s"/>
+<rect class="lit" x="675" y="462" width="6" height="8" fill="#fff3c2" style="animation-delay:0.1s"/>
+<rect class="lit" x="699" y="478" width="6" height="8" fill="#fff3c2" style="animation-delay:4.8s"/>
+<rect class="lit" x="675" y="494" width="6" height="8" fill="#fff3c2" style="animation-delay:5.8s"/>
+<rect class="lit" x="699" y="494" width="6" height="8" fill="#fff3c2" style="animation-delay:5.3s"/>
+<rect class="lit" x="723" y="494" width="6" height="8" fill="#fff3c2" style="animation-delay:6.6s"/>
+<rect class="lit" x="687" y="510" width="6" height="8" fill="#fff3c2" style="animation-delay:3.8s"/>
+<rect class="lit" x="711" y="510" width="6" height="8" fill="#fff3c2" style="animation-delay:4.1s"/>
+<rect class="lit" x="675" y="542" width="6" height="8" fill="#fff3c2" style="animation-delay:8.0s"/>
+<rect class="lit" x="711" y="542" width="6" height="8" fill="#fff3c2" style="animation-delay:6.5s"/>
+<rect class="lit" x="723" y="558" width="6" height="8" fill="#fff3c2" style="animation-delay:5.8s"/>
+<rect class="lit" x="687" y="574" width="6" height="8" fill="#fff3c2" style="animation-delay:7.7s"/>
+<rect class="lit" x="699" y="574" width="6" height="8" fill="#fff3c2" style="animation-delay:6.4s"/>
+<rect class="lit" x="699" y="590" width="6" height="8" fill="#fff3c2" style="animation-delay:7.1s"/>
+<rect class="lit" x="687" y="606" width="6" height="8" fill="#fff3c2" style="animation-delay:6.2s"/>
+<rect class="lit" x="675" y="622" width="6" height="8" fill="#fff3c2" style="animation-delay:7.7s"/>
+<rect class="lit" x="699" y="622" width="6" height="8" fill="#fff3c2" style="animation-delay:5.6s"/>
+<rect class="lit" x="699" y="670" width="6" height="8" fill="#fff3c2" style="animation-delay:5.2s"/>
+<rect class="lit" x="675" y="686" width="6" height="8" fill="#fff3c2" style="animation-delay:5.6s"/>
+<rect class="lit" x="711" y="686" width="6" height="8" fill="#fff3c2" style="animation-delay:7.1s"/>
+<rect x="747" y="505" width="55" height="267" fill="#d9caef"/>
+<rect x="790" y="505" width="12" height="267" fill="#c8b5e6"/>
+<rect x="747" y="505" width="55" height="3" fill="#efe5fb"/>
+<rect class="lit" x="779" y="519" width="6" height="8" fill="#fff3c2" style="animation-delay:7.8s"/>
+<rect class="lit" x="755" y="535" width="6" height="8" fill="#fff3c2" style="animation-delay:1.2s"/>
+<rect class="lit" x="779" y="535" width="6" height="8" fill="#fff3c2" style="animation-delay:4.6s"/>
+<rect class="lit" x="767" y="551" width="6" height="8" fill="#fff3c2" style="animation-delay:0.4s"/>
+<rect class="lit" x="779" y="567" width="6" height="8" fill="#fff3c2" style="animation-delay:2.7s"/>
+<rect class="lit" x="767" y="583" width="6" height="8" fill="#fff3c2" style="animation-delay:7.1s"/>
+<rect class="lit" x="755" y="631" width="6" height="8" fill="#fff3c2" style="animation-delay:0.6s"/>
+<rect class="lit" x="779" y="631" width="6" height="8" fill="#fff3c2" style="animation-delay:7.3s"/>
+<rect class="lit" x="779" y="663" width="6" height="8" fill="#fff3c2" style="animation-delay:6.6s"/>
+<rect x="810" y="366" width="81" height="406" fill="#d9caef"/>
+<rect x="879" y="366" width="12" height="406" fill="#c8b5e6"/>
+<rect x="810" y="366" width="81" height="3" fill="#efe5fb"/>
+<rect class="lit" x="830" y="412" width="6" height="8" fill="#fff3c2" style="animation-delay:4.6s"/>
+<rect class="lit" x="830" y="428" width="6" height="8" fill="#fff3c2" style="animation-delay:3.7s"/>
+<rect class="lit" x="818" y="460" width="6" height="8" fill="#fff3c2" style="animation-delay:5.5s"/>
+<rect class="lit" x="866" y="476" width="6" height="8" fill="#fff3c2" style="animation-delay:6.8s"/>
+<rect class="lit" x="818" y="524" width="6" height="8" fill="#fff3c2" style="animation-delay:6.9s"/>
+<rect class="lit" x="854" y="524" width="6" height="8" fill="#fff3c2" style="animation-delay:4.0s"/>
+<rect class="lit" x="866" y="524" width="6" height="8" fill="#fff3c2" style="animation-delay:1.6s"/>
+<rect class="lit" x="830" y="556" width="6" height="8" fill="#fff3c2" style="animation-delay:2.6s"/>
+<rect class="lit" x="842" y="556" width="6" height="8" fill="#fff3c2" style="animation-delay:4.8s"/>
+<rect class="lit" x="830" y="572" width="6" height="8" fill="#fff3c2" style="animation-delay:1.8s"/>
+<rect class="lit" x="854" y="604" width="6" height="8" fill="#fff3c2" style="animation-delay:4.3s"/>
+<rect class="lit" x="866" y="604" width="6" height="8" fill="#fff3c2" style="animation-delay:2.1s"/>
+<rect class="lit" x="842" y="620" width="6" height="8" fill="#fff3c2" style="animation-delay:3.4s"/>
+<rect class="lit" x="830" y="668" width="6" height="8" fill="#fff3c2" style="animation-delay:3.4s"/>
+<rect class="lit" x="854" y="668" width="6" height="8" fill="#fff3c2" style="animation-delay:3.3s"/>
+<rect class="lit" x="866" y="684" width="6" height="8" fill="#fff3c2" style="animation-delay:1.9s"/>
+<rect x="899" y="440" width="50" height="332" fill="#d9caef"/>
+<rect x="937" y="440" width="12" height="332" fill="#c8b5e6"/>
+<rect x="899" y="440" width="50" height="3" fill="#efe5fb"/>
+<rect class="lit" x="907" y="534" width="6" height="8" fill="#fff3c2" style="animation-delay:0.7s"/>
+<rect class="lit" x="919" y="534" width="6" height="8" fill="#fff3c2" style="animation-delay:2.3s"/>
+<rect class="lit" x="931" y="550" width="6" height="8" fill="#fff3c2" style="animation-delay:6.9s"/>
+<rect class="lit" x="931" y="582" width="6" height="8" fill="#fff3c2" style="animation-delay:4.8s"/>
+<rect class="lit" x="907" y="598" width="6" height="8" fill="#fff3c2" style="animation-delay:1.3s"/>
+<rect class="lit" x="919" y="614" width="6" height="8" fill="#fff3c2" style="animation-delay:0.2s"/>
+<rect class="lit" x="907" y="630" width="6" height="8" fill="#fff3c2" style="animation-delay:5.7s"/>
+<rect class="lit" x="931" y="646" width="6" height="8" fill="#fff3c2" style="animation-delay:4.5s"/>
+<rect class="lit" x="907" y="662" width="6" height="8" fill="#fff3c2" style="animation-delay:4.4s"/>
+<rect class="lit" x="931" y="694" width="6" height="8" fill="#fff3c2" style="animation-delay:3.2s"/>
+<rect x="955" y="470" width="49" height="302" fill="#d9caef"/>
+<rect x="992" y="470" width="12" height="302" fill="#c8b5e6"/>
+<rect x="955" y="470" width="49" height="3" fill="#efe5fb"/>
+<rect class="lit" x="963" y="500" width="6" height="8" fill="#fff3c2" style="animation-delay:4.4s"/>
+<rect class="lit" x="975" y="500" width="6" height="8" fill="#fff3c2" style="animation-delay:7.1s"/>
+<rect class="lit" x="963" y="516" width="6" height="8" fill="#fff3c2" style="animation-delay:3.6s"/>
+<rect class="lit" x="975" y="516" width="6" height="8" fill="#fff3c2" style="animation-delay:6.9s"/>
+<rect class="lit" x="987" y="516" width="6" height="8" fill="#fff3c2" style="animation-delay:1.0s"/>
+<rect class="lit" x="963" y="564" width="6" height="8" fill="#fff3c2" style="animation-delay:3.9s"/>
+<rect class="lit" x="975" y="580" width="6" height="8" fill="#fff3c2" style="animation-delay:8.0s"/>
+<rect class="lit" x="975" y="596" width="6" height="8" fill="#fff3c2" style="animation-delay:0.8s"/>
+<rect class="lit" x="975" y="644" width="6" height="8" fill="#fff3c2" style="animation-delay:0.4s"/>
+<rect class="lit" x="987" y="644" width="6" height="8" fill="#fff3c2" style="animation-delay:6.2s"/>
+<rect x="1012" y="472" width="61" height="300" fill="#d9caef"/>
+<rect x="1061" y="472" width="12" height="300" fill="#c8b5e6"/>
+<rect x="1012" y="472" width="61" height="3" fill="#efe5fb"/>
+<rect class="lit" x="1044" y="486" width="6" height="8" fill="#fff3c2" style="animation-delay:7.3s"/>
+<rect class="lit" x="1056" y="502" width="6" height="8" fill="#fff3c2" style="animation-delay:0.8s"/>
+<rect class="lit" x="1020" y="550" width="6" height="8" fill="#fff3c2" style="animation-delay:7.9s"/>
+<rect class="lit" x="1056" y="550" width="6" height="8" fill="#fff3c2" style="animation-delay:6.1s"/>
+<rect class="lit" x="1044" y="566" width="6" height="8" fill="#fff3c2" style="animation-delay:7.9s"/>
+<rect class="lit" x="1044" y="582" width="6" height="8" fill="#fff3c2" style="animation-delay:6.0s"/>
+<rect class="lit" x="1032" y="614" width="6" height="8" fill="#fff3c2" style="animation-delay:3.6s"/>
+<rect class="lit" x="1056" y="614" width="6" height="8" fill="#fff3c2" style="animation-delay:5.2s"/>
+<rect class="lit" x="1032" y="630" width="6" height="8" fill="#fff3c2" style="animation-delay:6.1s"/>
+<rect class="lit" x="1044" y="630" width="6" height="8" fill="#fff3c2" style="animation-delay:5.0s"/>
+<rect class="lit" x="1056" y="630" width="6" height="8" fill="#fff3c2" style="animation-delay:2.6s"/>
+<rect class="lit" x="1020" y="646" width="6" height="8" fill="#fff3c2" style="animation-delay:6.0s"/>
+<rect class="lit" x="1032" y="646" width="6" height="8" fill="#fff3c2" style="animation-delay:5.9s"/>
+<rect class="lit" x="1044" y="646" width="6" height="8" fill="#fff3c2" style="animation-delay:3.0s"/>
+<rect class="lit" x="1020" y="662" width="6" height="8" fill="#fff3c2" style="animation-delay:2.6s"/>
+<rect class="lit" x="1056" y="662" width="6" height="8" fill="#fff3c2" style="animation-delay:0.8s"/>
+<rect class="lit" x="1020" y="678" width="6" height="8" fill="#fff3c2" style="animation-delay:2.8s"/>
+<rect x="1077" y="379" width="80" height="393" fill="#d9caef"/>
+<rect x="1145" y="379" width="12" height="393" fill="#c8b5e6"/>
+<rect x="1077" y="379" width="80" height="3" fill="#efe5fb"/>
+<rect class="lit" x="1121" y="393" width="6" height="8" fill="#fff3c2" style="animation-delay:5.7s"/>
+<rect class="lit" x="1121" y="409" width="6" height="8" fill="#fff3c2" style="animation-delay:7.0s"/>
+<rect class="lit" x="1133" y="409" width="6" height="8" fill="#fff3c2" style="animation-delay:6.6s"/>
+<rect class="lit" x="1097" y="425" width="6" height="8" fill="#fff3c2" style="animation-delay:4.4s"/>
+<rect class="lit" x="1133" y="425" width="6" height="8" fill="#fff3c2" style="animation-delay:7.5s"/>
+<rect class="lit" x="1085" y="441" width="6" height="8" fill="#fff3c2" style="animation-delay:8.0s"/>
+<rect class="lit" x="1133" y="441" width="6" height="8" fill="#fff3c2" style="animation-delay:1.9s"/>
+<rect class="lit" x="1097" y="457" width="6" height="8" fill="#fff3c2" style="animation-delay:1.8s"/>
+<rect class="lit" x="1121" y="457" width="6" height="8" fill="#fff3c2" style="animation-delay:7.5s"/>
+<rect class="lit" x="1109" y="473" width="6" height="8" fill="#fff3c2" style="animation-delay:4.8s"/>
+<rect class="lit" x="1121" y="489" width="6" height="8" fill="#fff3c2" style="animation-delay:0.7s"/>
+<rect class="lit" x="1097" y="505" width="6" height="8" fill="#fff3c2" style="animation-delay:5.8s"/>
+<rect class="lit" x="1121" y="505" width="6" height="8" fill="#fff3c2" style="animation-delay:5.0s"/>
+<rect class="lit" x="1121" y="521" width="6" height="8" fill="#fff3c2" style="animation-delay:1.8s"/>
+<rect class="lit" x="1085" y="553" width="6" height="8" fill="#fff3c2" style="animation-delay:2.7s"/>
+<rect class="lit" x="1109" y="553" width="6" height="8" fill="#fff3c2" style="animation-delay:3.9s"/>
+<rect class="lit" x="1133" y="553" width="6" height="8" fill="#fff3c2" style="animation-delay:4.5s"/>
+<rect class="lit" x="1085" y="585" width="6" height="8" fill="#fff3c2" style="animation-delay:6.4s"/>
+<rect class="lit" x="1109" y="601" width="6" height="8" fill="#fff3c2" style="animation-delay:6.9s"/>
+<rect class="lit" x="1109" y="617" width="6" height="8" fill="#fff3c2" style="animation-delay:4.2s"/>
+<rect class="lit" x="1121" y="633" width="6" height="8" fill="#fff3c2" style="animation-delay:1.3s"/>
+<rect class="lit" x="1121" y="649" width="6" height="8" fill="#fff3c2" style="animation-delay:1.9s"/>
+<rect class="lit" x="1085" y="665" width="6" height="8" fill="#fff3c2" style="animation-delay:7.5s"/>
+<rect class="lit" x="1121" y="665" width="6" height="8" fill="#fff3c2" style="animation-delay:6.8s"/>
+<rect x="1163" y="508" width="80" height="264" fill="#d9caef"/>
+<rect x="1231" y="508" width="12" height="264" fill="#c8b5e6"/>
+<rect x="1163" y="508" width="80" height="3" fill="#efe5fb"/>
+<rect class="lit" x="1183" y="522" width="6" height="8" fill="#fff3c2" style="animation-delay:0.1s"/>
+<rect class="lit" x="1171" y="538" width="6" height="8" fill="#fff3c2" style="animation-delay:1.6s"/>
+<rect class="lit" x="1171" y="570" width="6" height="8" fill="#fff3c2" style="animation-delay:3.2s"/>
+<rect class="lit" x="1183" y="586" width="6" height="8" fill="#fff3c2" style="animation-delay:0.2s"/>
+<rect class="lit" x="1183" y="602" width="6" height="8" fill="#fff3c2" style="animation-delay:5.1s"/>
+<rect class="lit" x="1219" y="602" width="6" height="8" fill="#fff3c2" style="animation-delay:3.4s"/>
+<rect class="lit" x="1219" y="618" width="6" height="8" fill="#fff3c2" style="animation-delay:1.4s"/>
+<rect class="lit" x="1195" y="650" width="6" height="8" fill="#fff3c2" style="animation-delay:3.5s"/>
+<rect class="lit" x="1219" y="666" width="6" height="8" fill="#fff3c2" style="animation-delay:7.9s"/>
+<g transform="translate(330 0)">
+  <path d="M0 712 L40 230 L80 712" fill="#ffcdc4" fill-opacity=".5" stroke="#e57a7a" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M10 620 H70 M18 540 H62 M24 460 H56 M29 390 H51 M10 620 L62 540 M70 620 L18 540 M18 540 L56 460 M62 540 L24 460 M24 460 L51 390 M56 460 L29 390" stroke="#e57a7a" stroke-width="2.4"/>
+  <rect x="18" y="340" width="44" height="18" rx="3" fill="#f7ae9e" stroke="#e57a7a" stroke-width="2.4"/>
+  <rect x="26" y="280" width="28" height="12" rx="3" fill="#fbc0b2" stroke="#e57a7a" stroke-width="2"/>
+  <line x1="40" y1="230" x2="40" y2="176" stroke="#e57a7a" stroke-width="3.4"/>
+  <circle class="blink" cx="40" cy="174" r="4.5" fill="#ff6b6b"/>
+</g>
+<rect x="-10" y="260" width="150" height="560" fill="#b7a2db"/>
+<rect x="122" y="260" width="18" height="560" fill="#a690cf"/>
+<rect x="-10" y="260" width="150" height="6" fill="#d6c7f0"/>
+<rect class="lit" x="92" y="282" width="9" height="11" fill="#fff6d4" style="animation-delay:7.1s"/>
+<rect class="lit" x="20" y="306" width="9" height="11" fill="#fff6d4" style="animation-delay:2.5s"/>
+<rect class="lit" x="74" y="306" width="9" height="11" fill="#fff6d4" style="animation-delay:3.4s"/>
+<rect class="lit" x="92" y="306" width="9" height="11" fill="#fff6d4" style="animation-delay:1.3s"/>
+<rect class="lit" x="110" y="306" width="9" height="11" fill="#fff6d4" style="animation-delay:2.5s"/>
+<rect class="lit" x="2" y="330" width="9" height="11" fill="#fff6d4" style="animation-delay:4.8s"/>
+<rect class="lit" x="56" y="330" width="9" height="11" fill="#fff6d4" style="animation-delay:1.8s"/>
+<rect class="lit" x="92" y="330" width="9" height="11" fill="#fff6d4" style="animation-delay:3.3s"/>
+<rect class="lit" x="110" y="330" width="9" height="11" fill="#fff6d4" style="animation-delay:5.7s"/>
+<rect class="lit" x="20" y="354" width="9" height="11" fill="#fff6d4" style="animation-delay:1.3s"/>
+<rect class="lit" x="38" y="354" width="9" height="11" fill="#fff6d4" style="animation-delay:1.7s"/>
+<rect class="lit" x="92" y="354" width="9" height="11" fill="#fff6d4" style="animation-delay:2.8s"/>
+<rect class="lit" x="20" y="378" width="9" height="11" fill="#fff6d4" style="animation-delay:7.3s"/>
+<rect class="lit" x="38" y="378" width="9" height="11" fill="#fff6d4" style="animation-delay:2.0s"/>
+<rect class="lit" x="92" y="378" width="9" height="11" fill="#fff6d4" style="animation-delay:1.1s"/>
+<rect class="lit" x="2" y="402" width="9" height="11" fill="#fff6d4" style="animation-delay:7.1s"/>
+<rect class="lit" x="74" y="402" width="9" height="11" fill="#fff6d4" style="animation-delay:0.7s"/>
+<rect class="lit" x="110" y="402" width="9" height="11" fill="#fff6d4" style="animation-delay:5.6s"/>
+<rect class="lit" x="74" y="426" width="9" height="11" fill="#fff6d4" style="animation-delay:0.3s"/>
+<rect class="lit" x="92" y="426" width="9" height="11" fill="#fff6d4" style="animation-delay:6.2s"/>
+<rect class="lit" x="38" y="450" width="9" height="11" fill="#fff6d4" style="animation-delay:4.8s"/>
+<rect class="lit" x="56" y="474" width="9" height="11" fill="#fff6d4" style="animation-delay:7.3s"/>
+<rect class="lit" x="74" y="498" width="9" height="11" fill="#fff6d4" style="animation-delay:3.7s"/>
+<rect class="lit" x="92" y="498" width="9" height="11" fill="#fff6d4" style="animation-delay:0.6s"/>
+<rect class="lit" x="110" y="498" width="9" height="11" fill="#fff6d4" style="animation-delay:5.9s"/>
+<rect class="lit" x="2" y="522" width="9" height="11" fill="#fff6d4" style="animation-delay:5.3s"/>
+<rect class="lit" x="20" y="522" width="9" height="11" fill="#fff6d4" style="animation-delay:1.3s"/>
+<rect class="lit" x="20" y="546" width="9" height="11" fill="#fff6d4" style="animation-delay:3.3s"/>
+<rect class="lit" x="56" y="546" width="9" height="11" fill="#fff6d4" style="animation-delay:4.1s"/>
+<rect class="lit" x="110" y="546" width="9" height="11" fill="#fff6d4" style="animation-delay:6.5s"/>
+<rect class="lit" x="20" y="570" width="9" height="11" fill="#fff6d4" style="animation-delay:0.2s"/>
+<rect class="lit" x="110" y="570" width="9" height="11" fill="#fff6d4" style="animation-delay:5.0s"/>
+<rect class="lit" x="74" y="594" width="9" height="11" fill="#fff6d4" style="animation-delay:7.4s"/>
+<rect class="lit" x="92" y="594" width="9" height="11" fill="#fff6d4" style="animation-delay:3.8s"/>
+<rect class="lit" x="2" y="618" width="9" height="11" fill="#fff6d4" style="animation-delay:2.3s"/>
+<rect class="lit" x="38" y="618" width="9" height="11" fill="#fff6d4" style="animation-delay:4.0s"/>
+<rect class="lit" x="74" y="618" width="9" height="11" fill="#fff6d4" style="animation-delay:5.8s"/>
+<rect class="lit" x="110" y="618" width="9" height="11" fill="#fff6d4" style="animation-delay:4.0s"/>
+<rect class="lit" x="20" y="642" width="9" height="11" fill="#fff6d4" style="animation-delay:4.6s"/>
+<rect class="lit" x="38" y="642" width="9" height="11" fill="#fff6d4" style="animation-delay:1.1s"/>
+<rect class="lit" x="56" y="642" width="9" height="11" fill="#fff6d4" style="animation-delay:7.1s"/>
+<rect class="lit" x="2" y="666" width="9" height="11" fill="#fff6d4" style="animation-delay:4.6s"/>
+<rect class="lit" x="56" y="666" width="9" height="11" fill="#fff6d4" style="animation-delay:2.5s"/>
+<rect class="lit" x="110" y="666" width="9" height="11" fill="#fff6d4" style="animation-delay:1.1s"/>
+<rect class="lit" x="74" y="690" width="9" height="11" fill="#fff6d4" style="animation-delay:3.3s"/>
+<rect class="lit" x="92" y="690" width="9" height="11" fill="#fff6d4" style="animation-delay:3.8s"/>
+<rect class="lit" x="110" y="690" width="9" height="11" fill="#fff6d4" style="animation-delay:2.9s"/>
+<rect class="lit" x="2" y="714" width="9" height="11" fill="#fff6d4" style="animation-delay:2.8s"/>
+<rect class="lit" x="56" y="714" width="9" height="11" fill="#fff6d4" style="animation-delay:4.8s"/>
+<rect class="lit" x="20" y="738" width="9" height="11" fill="#fff6d4" style="animation-delay:6.5s"/>
+<rect class="lit" x="38" y="738" width="9" height="11" fill="#fff6d4" style="animation-delay:2.4s"/>
+<rect class="lit" x="56" y="738" width="9" height="11" fill="#fff6d4" style="animation-delay:7.4s"/>
+<rect class="lit" x="110" y="738" width="9" height="11" fill="#fff6d4" style="animation-delay:5.7s"/>
+<rect class="lit" x="2" y="762" width="9" height="11" fill="#fff6d4" style="animation-delay:3.6s"/>
+<rect class="lit" x="110" y="762" width="9" height="11" fill="#fff6d4" style="animation-delay:5.0s"/>
+<rect class="lit" x="20" y="786" width="9" height="11" fill="#fff6d4" style="animation-delay:2.7s"/>
+<rect class="lit" x="38" y="786" width="9" height="11" fill="#fff6d4" style="animation-delay:7.2s"/>
+<rect class="lit" x="74" y="786" width="9" height="11" fill="#fff6d4" style="animation-delay:2.4s"/>
+<rect class="lit" x="92" y="786" width="9" height="11" fill="#fff6d4" style="animation-delay:1.0s"/>
+<rect class="lit" x="110" y="786" width="9" height="11" fill="#fff6d4" style="animation-delay:2.1s"/>
+<rect x="140" y="490" width="96" height="330" fill="#b7a2db"/>
+<rect x="218" y="490" width="18" height="330" fill="#a690cf"/>
+<rect x="140" y="490" width="96" height="6" fill="#d6c7f0"/>
+<rect class="lit" x="152" y="512" width="9" height="11" fill="#fff6d4" style="animation-delay:5.3s"/>
+<rect class="lit" x="170" y="512" width="9" height="11" fill="#fff6d4" style="animation-delay:6.3s"/>
+<rect class="lit" x="206" y="512" width="9" height="11" fill="#fff6d4" style="animation-delay:2.8s"/>
+<rect class="lit" x="188" y="536" width="9" height="11" fill="#fff6d4" style="animation-delay:6.1s"/>
+<rect class="lit" x="206" y="536" width="9" height="11" fill="#fff6d4" style="animation-delay:6.2s"/>
+<rect class="lit" x="170" y="560" width="9" height="11" fill="#fff6d4" style="animation-delay:1.4s"/>
+<rect class="lit" x="188" y="560" width="9" height="11" fill="#fff6d4" style="animation-delay:5.4s"/>
+<rect class="lit" x="152" y="584" width="9" height="11" fill="#fff6d4" style="animation-delay:2.0s"/>
+<rect class="lit" x="170" y="584" width="9" height="11" fill="#fff6d4" style="animation-delay:0.1s"/>
+<rect class="lit" x="152" y="608" width="9" height="11" fill="#fff6d4" style="animation-delay:0.5s"/>
+<rect class="lit" x="206" y="632" width="9" height="11" fill="#fff6d4" style="animation-delay:2.9s"/>
+<rect class="lit" x="152" y="656" width="9" height="11" fill="#fff6d4" style="animation-delay:4.2s"/>
+<rect class="lit" x="188" y="680" width="9" height="11" fill="#fff6d4" style="animation-delay:0.3s"/>
+<rect class="lit" x="206" y="680" width="9" height="11" fill="#fff6d4" style="animation-delay:7.6s"/>
+<rect class="lit" x="152" y="704" width="9" height="11" fill="#fff6d4" style="animation-delay:7.7s"/>
+<rect class="lit" x="188" y="704" width="9" height="11" fill="#fff6d4" style="animation-delay:3.9s"/>
+<rect class="lit" x="206" y="704" width="9" height="11" fill="#fff6d4" style="animation-delay:2.6s"/>
+<rect class="lit" x="152" y="728" width="9" height="11" fill="#fff6d4" style="animation-delay:1.6s"/>
+<rect class="lit" x="170" y="728" width="9" height="11" fill="#fff6d4" style="animation-delay:0.4s"/>
+<rect class="lit" x="206" y="728" width="9" height="11" fill="#fff6d4" style="animation-delay:4.1s"/>
+<rect class="lit" x="152" y="752" width="9" height="11" fill="#fff6d4" style="animation-delay:3.9s"/>
+<rect class="lit" x="206" y="752" width="9" height="11" fill="#fff6d4" style="animation-delay:7.8s"/>
+<rect class="lit" x="170" y="776" width="9" height="11" fill="#fff6d4" style="animation-delay:1.0s"/>
+<rect class="lit" x="188" y="776" width="9" height="11" fill="#fff6d4" style="animation-delay:1.7s"/>
+<rect class="lit" x="206" y="776" width="9" height="11" fill="#fff6d4" style="animation-delay:4.9s"/>
+<rect x="950" y="440" width="96" height="380" fill="#b7a2db"/>
+<rect x="1028" y="440" width="18" height="380" fill="#a690cf"/>
+<rect x="950" y="440" width="96" height="6" fill="#d6c7f0"/>
+<rect class="lit" x="998" y="534" width="9" height="11" fill="#fff6d4" style="animation-delay:7.4s"/>
+<rect class="lit" x="1016" y="534" width="9" height="11" fill="#fff6d4" style="animation-delay:5.2s"/>
+<rect class="lit" x="980" y="558" width="9" height="11" fill="#fff6d4" style="animation-delay:5.0s"/>
+<rect class="lit" x="1016" y="654" width="9" height="11" fill="#fff6d4" style="animation-delay:3.2s"/>
+<rect class="lit" x="962" y="678" width="9" height="11" fill="#fff6d4" style="animation-delay:6.7s"/>
+<rect class="lit" x="998" y="702" width="9" height="11" fill="#fff6d4" style="animation-delay:3.3s"/>
+<rect class="lit" x="962" y="726" width="9" height="11" fill="#fff6d4" style="animation-delay:4.1s"/>
+<rect class="lit" x="980" y="726" width="9" height="11" fill="#fff6d4" style="animation-delay:1.9s"/>
+<rect class="lit" x="998" y="726" width="9" height="11" fill="#fff6d4" style="animation-delay:2.0s"/>
+<rect class="lit" x="962" y="750" width="9" height="11" fill="#fff6d4" style="animation-delay:7.3s"/>
+<rect class="lit" x="980" y="750" width="9" height="11" fill="#fff6d4" style="animation-delay:7.8s"/>
+<rect class="lit" x="962" y="774" width="9" height="11" fill="#fff6d4" style="animation-delay:0.0s"/>
+<rect class="lit" x="1016" y="774" width="9" height="11" fill="#fff6d4" style="animation-delay:7.1s"/>
+<rect class="lit" x="962" y="798" width="9" height="11" fill="#fff6d4" style="animation-delay:1.3s"/>
+<rect class="lit" x="1016" y="798" width="9" height="11" fill="#fff6d4" style="animation-delay:2.4s"/>
+<rect x="1040" y="220" width="150" height="600" fill="#b7a2db"/>
+<rect x="1172" y="220" width="18" height="600" fill="#a690cf"/>
+<rect x="1040" y="220" width="150" height="6" fill="#d6c7f0"/>
+<rect class="lit" x="1106" y="242" width="9" height="11" fill="#fff6d4" style="animation-delay:7.5s"/>
+<rect class="lit" x="1124" y="242" width="9" height="11" fill="#fff6d4" style="animation-delay:1.3s"/>
+<rect class="lit" x="1124" y="266" width="9" height="11" fill="#fff6d4" style="animation-delay:2.8s"/>
+<rect class="lit" x="1142" y="266" width="9" height="11" fill="#fff6d4" style="animation-delay:0.8s"/>
+<rect class="lit" x="1160" y="266" width="9" height="11" fill="#fff6d4" style="animation-delay:0.7s"/>
+<rect class="lit" x="1070" y="290" width="9" height="11" fill="#fff6d4" style="animation-delay:4.9s"/>
+<rect class="lit" x="1160" y="290" width="9" height="11" fill="#fff6d4" style="animation-delay:5.0s"/>
+<rect class="lit" x="1052" y="314" width="9" height="11" fill="#fff6d4" style="animation-delay:1.9s"/>
+<rect class="lit" x="1160" y="314" width="9" height="11" fill="#fff6d4" style="animation-delay:5.7s"/>
+<rect class="lit" x="1070" y="338" width="9" height="11" fill="#fff6d4" style="animation-delay:3.4s"/>
+<rect class="lit" x="1106" y="338" width="9" height="11" fill="#fff6d4" style="animation-delay:2.3s"/>
+<rect class="lit" x="1124" y="338" width="9" height="11" fill="#fff6d4" style="animation-delay:7.0s"/>
+<rect class="lit" x="1142" y="338" width="9" height="11" fill="#fff6d4" style="animation-delay:1.2s"/>
+<rect class="lit" x="1160" y="338" width="9" height="11" fill="#fff6d4" style="animation-delay:3.7s"/>
+<rect class="lit" x="1088" y="362" width="9" height="11" fill="#fff6d4" style="animation-delay:2.4s"/>
+<rect class="lit" x="1124" y="362" width="9" height="11" fill="#fff6d4" style="animation-delay:2.2s"/>
+<rect class="lit" x="1088" y="386" width="9" height="11" fill="#fff6d4" style="animation-delay:6.5s"/>
+<rect class="lit" x="1142" y="386" width="9" height="11" fill="#fff6d4" style="animation-delay:4.6s"/>
+<rect class="lit" x="1142" y="410" width="9" height="11" fill="#fff6d4" style="animation-delay:6.7s"/>
+<rect class="lit" x="1160" y="410" width="9" height="11" fill="#fff6d4" style="animation-delay:6.5s"/>
+<rect class="lit" x="1052" y="434" width="9" height="11" fill="#fff6d4" style="animation-delay:4.8s"/>
+<rect class="lit" x="1088" y="434" width="9" height="11" fill="#fff6d4" style="animation-delay:4.3s"/>
+<rect class="lit" x="1106" y="434" width="9" height="11" fill="#fff6d4" style="animation-delay:0.7s"/>
+<rect class="lit" x="1124" y="434" width="9" height="11" fill="#fff6d4" style="animation-delay:2.3s"/>
+<rect class="lit" x="1142" y="434" width="9" height="11" fill="#fff6d4" style="animation-delay:6.3s"/>
+<rect class="lit" x="1160" y="434" width="9" height="11" fill="#fff6d4" style="animation-delay:3.3s"/>
+<rect class="lit" x="1052" y="458" width="9" height="11" fill="#fff6d4" style="animation-delay:0.3s"/>
+<rect class="lit" x="1142" y="458" width="9" height="11" fill="#fff6d4" style="animation-delay:3.4s"/>
+<rect class="lit" x="1160" y="458" width="9" height="11" fill="#fff6d4" style="animation-delay:5.9s"/>
+<rect class="lit" x="1070" y="482" width="9" height="11" fill="#fff6d4" style="animation-delay:3.1s"/>
+<rect class="lit" x="1088" y="482" width="9" height="11" fill="#fff6d4" style="animation-delay:3.7s"/>
+<rect class="lit" x="1106" y="482" width="9" height="11" fill="#fff6d4" style="animation-delay:7.3s"/>
+<rect class="lit" x="1124" y="482" width="9" height="11" fill="#fff6d4" style="animation-delay:6.2s"/>
+<rect class="lit" x="1052" y="506" width="9" height="11" fill="#fff6d4" style="animation-delay:3.5s"/>
+<rect class="lit" x="1070" y="506" width="9" height="11" fill="#fff6d4" style="animation-delay:2.5s"/>
+<rect class="lit" x="1106" y="506" width="9" height="11" fill="#fff6d4" style="animation-delay:1.2s"/>
+<rect class="lit" x="1142" y="506" width="9" height="11" fill="#fff6d4" style="animation-delay:7.5s"/>
+<rect class="lit" x="1052" y="530" width="9" height="11" fill="#fff6d4" style="animation-delay:7.2s"/>
+<rect class="lit" x="1088" y="530" width="9" height="11" fill="#fff6d4" style="animation-delay:4.0s"/>
+<rect class="lit" x="1124" y="530" width="9" height="11" fill="#fff6d4" style="animation-delay:5.1s"/>
+<rect class="lit" x="1142" y="530" width="9" height="11" fill="#fff6d4" style="animation-delay:0.5s"/>
+<rect class="lit" x="1052" y="554" width="9" height="11" fill="#fff6d4" style="animation-delay:3.3s"/>
+<rect class="lit" x="1160" y="554" width="9" height="11" fill="#fff6d4" style="animation-delay:6.0s"/>
+<rect class="lit" x="1052" y="578" width="9" height="11" fill="#fff6d4" style="animation-delay:1.9s"/>
+<rect class="lit" x="1070" y="578" width="9" height="11" fill="#fff6d4" style="animation-delay:4.8s"/>
+<rect class="lit" x="1088" y="578" width="9" height="11" fill="#fff6d4" style="animation-delay:7.7s"/>
+<rect class="lit" x="1142" y="578" width="9" height="11" fill="#fff6d4" style="animation-delay:7.0s"/>
+<rect class="lit" x="1088" y="602" width="9" height="11" fill="#fff6d4" style="animation-delay:6.0s"/>
+<rect class="lit" x="1106" y="602" width="9" height="11" fill="#fff6d4" style="animation-delay:2.3s"/>
+<rect class="lit" x="1124" y="602" width="9" height="11" fill="#fff6d4" style="animation-delay:3.9s"/>
+<rect class="lit" x="1142" y="602" width="9" height="11" fill="#fff6d4" style="animation-delay:2.3s"/>
+<rect class="lit" x="1160" y="602" width="9" height="11" fill="#fff6d4" style="animation-delay:6.6s"/>
+<rect class="lit" x="1160" y="626" width="9" height="11" fill="#fff6d4" style="animation-delay:2.5s"/>
+<rect class="lit" x="1052" y="650" width="9" height="11" fill="#fff6d4" style="animation-delay:2.4s"/>
+<rect class="lit" x="1070" y="650" width="9" height="11" fill="#fff6d4" style="animation-delay:3.4s"/>
+<rect class="lit" x="1106" y="650" width="9" height="11" fill="#fff6d4" style="animation-delay:3.1s"/>
+<rect class="lit" x="1124" y="650" width="9" height="11" fill="#fff6d4" style="animation-delay:2.3s"/>
+<rect class="lit" x="1070" y="674" width="9" height="11" fill="#fff6d4" style="animation-delay:3.7s"/>
+<rect class="lit" x="1106" y="674" width="9" height="11" fill="#fff6d4" style="animation-delay:3.0s"/>
+<rect class="lit" x="1106" y="698" width="9" height="11" fill="#fff6d4" style="animation-delay:0.2s"/>
+<rect class="lit" x="1124" y="698" width="9" height="11" fill="#fff6d4" style="animation-delay:6.8s"/>
+<rect class="lit" x="1052" y="722" width="9" height="11" fill="#fff6d4" style="animation-delay:4.7s"/>
+<rect class="lit" x="1070" y="722" width="9" height="11" fill="#fff6d4" style="animation-delay:1.5s"/>
+<rect class="lit" x="1088" y="746" width="9" height="11" fill="#fff6d4" style="animation-delay:4.1s"/>
+<rect class="lit" x="1106" y="746" width="9" height="11" fill="#fff6d4" style="animation-delay:2.6s"/>
+<rect class="lit" x="1142" y="746" width="9" height="11" fill="#fff6d4" style="animation-delay:7.2s"/>
+<rect class="lit" x="1070" y="770" width="9" height="11" fill="#fff6d4" style="animation-delay:2.7s"/>
+<rect class="lit" x="1142" y="770" width="9" height="11" fill="#fff6d4" style="animation-delay:3.8s"/>
+<rect class="lit" x="1160" y="770" width="9" height="11" fill="#fff6d4" style="animation-delay:0.2s"/>
+<rect class="lit" x="1052" y="794" width="9" height="11" fill="#fff6d4" style="animation-delay:7.7s"/>
+<rect class="lit" x="1142" y="794" width="9" height="11" fill="#fff6d4" style="animation-delay:7.3s"/>
+<g class="neon "><rect x="70" y="330" width="34" height="120" rx="6" fill="#fffafd" stroke="#e2558f" stroke-width="3"/><text x="87" y="359" fill="#e2558f" font-size="21" font-weight="800" text-anchor="middle"><tspan x="87" dy="0">カ</tspan><tspan x="87" dy="26">ラ</tspan><tspan x="87" dy="26">オ</tspan><tspan x="87" dy="26">ケ</tspan></text></g>
+<g class="neon n2"><rect x="1092" y="290" width="34" height="120" rx="6" fill="#fffafd" stroke="#2f9ec4" stroke-width="3"/><text x="1109" y="319" fill="#2f9ec4" font-size="21" font-weight="800" text-anchor="middle"><tspan x="1109" dy="0">ラ</tspan><tspan x="1109" dy="26">ー</tspan><tspan x="1109" dy="26">メ</tspan><tspan x="1109" dy="26">ン</tspan></text></g>
+<g class="neon n3"><rect x="990" y="470" width="34" height="68" rx="6" fill="#fffafd" stroke="#d48a1f" stroke-width="3"/><text x="1007" y="499" fill="#d48a1f" font-size="21" font-weight="800" text-anchor="middle"><tspan x="1007" dy="0">喫</tspan><tspan x="1007" dy="26">茶</tspan></text></g>
+<rect y="600" width="1180" height="220" fill="url(#street)"/>
+<rect y="640" width="1180" height="14" fill="#8d79b9"/>
+<rect x="120" y="654" width="12" height="170" fill="#8d79b9"/><rect x="420" y="654" width="12" height="170" fill="#8d79b9"/><rect x="720" y="654" width="12" height="170" fill="#8d79b9"/><rect x="1020" y="654" width="12" height="170" fill="#8d79b9"/>
+<g class="train">
+  <rect x="0" y="596" width="320" height="44" rx="10" fill="#fffafd" stroke="#6f5d96" stroke-width="2"/>
+  <rect x="0" y="624" width="320" height="6" fill="#f07fa8"/>
+  <g fill="#fff0b3"><rect x="16" y="604" width="30" height="14" rx="3"/><rect x="66" y="604" width="30" height="14" rx="3"/><rect x="116" y="604" width="30" height="14" rx="3"/><rect x="166" y="604" width="30" height="14" rx="3"/><rect x="216" y="604" width="30" height="14" rx="3"/><rect x="266" y="604" width="30" height="14" rx="3"/></g>
+</g>
+<rect y="760" width="1180" height="60" fill="#6f5d96" opacity=".5"/>
+<circle cx="60" cy="770" r="5" fill="#ffe9a8"/><circle cx="60" cy="770" r="18" fill="#ffe9a8" opacity=".25"/><circle cx="220" cy="770" r="5" fill="#ffe9a8"/><circle cx="220" cy="770" r="18" fill="#ffe9a8" opacity=".25"/><circle cx="380" cy="770" r="5" fill="#ffe9a8"/><circle cx="380" cy="770" r="18" fill="#ffe9a8" opacity=".25"/><circle cx="540" cy="770" r="5" fill="#ffe9a8"/><circle cx="540" cy="770" r="18" fill="#ffe9a8" opacity=".25"/><circle cx="700" cy="770" r="5" fill="#ffe9a8"/><circle cx="700" cy="770" r="18" fill="#ffe9a8" opacity=".25"/><circle cx="860" cy="770" r="5" fill="#ffe9a8"/><circle cx="860" cy="770" r="18" fill="#ffe9a8" opacity=".25"/><circle cx="1020" cy="770" r="5" fill="#ffe9a8"/><circle cx="1020" cy="770" r="18" fill="#ffe9a8" opacity=".25"/>
+</svg>
+  <div class="status"><span id="sbTime">19:47</span><span class="r">
+    <svg width="18" height="13" viewBox="0 0 18 13"><path d="M9 12.5l2.4-2.6a3.4 3.4 0 0 0-4.8 0zM4.3 7.6a6.6 6.6 0 0 1 9.4 0l1.7-1.8a9 9 0 0 0-12.8 0zM.9 4.1a11.4 11.4 0 0 1 16.2 0L18.8 2.3a14 14 0 0 0-19.6 0z"/></svg>
+    <span>82%</span>
+    <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="#fff" opacity=".6"/><rect x="2.5" y="2.5" width="16" height="8" rx="2"/><rect x="24.6" y="4.2" width="1.8" height="4.6" rx="1" opacity=".6"/></svg>
+  </span></div>
+
+  <!-- 잠금 화면 -->
+  <div class="lock" id="lock" role="button" tabindex="0" aria-label="위로 밀어서 열기">
+    <div class="date" id="lkDate">10월 15일 목요일</div>
+    <div class="time" id="lkTime">19:47</div>
+    <div class="notif" id="notif">
+      <span class="ic msg"><svg viewBox="0 0 28 28" width="26" height="26"><path d="M14 5c6 0 10.5 3.7 10.5 8.3S20 21.6 14 21.6c-1.1 0-2.2-.1-3.2-.4L6 23.5l1.3-4.1C5 17.9 3.5 15.7 3.5 13.3 3.5 8.7 8 5 14 5z" fill="#fff"/></svg></span>
+      <div class="msgbody"><div class="meta"><span>메시지</span><small>지금</small></div><b>예은 ✦</b>
+        <span class="typing" id="typing"><i></i><i></i><i></i></span><span class="text" id="msgText">Welcome to my playground ✨</span></div>
+    </div>
+    <div class="swipe"><span>위로 밀어서 열기</span><div class="bar"></div></div>
+  </div>
+
+  <div id="ytAudio"><div id="ytAudioInner"></div></div>
+  <div class="banner" id="banner" role="status">
+    <span class="ic"><svg viewBox="0 0 28 28" width="24" height="24"><path d="M14 5c6 0 10.5 3.7 10.5 8.3S20 21.6 14 21.6c-1.1 0-2.2-.1-3.2-.4L6 23.5l1.3-4.1C5 17.9 3.5 15.7 3.5 13.3 3.5 8.7 8 5 14 5z" fill="#fff"/></svg></span>
+    <div class="msgbody"><div class="meta"><span>메시지</span><small>지금</small></div><b>예은 ✦</b><span class="text">아이콘을 눌러 탐색해 보세요! 👆</span></div>
+  </div>
+
+  <!-- 홈 화면 -->
+  <div class="home" id="home">
+    <div class="widgets">
+      <div class="wd w-clock"><div class="t" id="wdTime">19:47</div></div>
+      <button class="wd w-music" data-app="music"><div class="disc"></div><div><div class="k">지금 재생 중</div><div class="tt" id="wmTitle">재생 중인 곡 없음</div><div class="ar" id="wmArtist">눌러서 플레이리스트 열기</div></div></button>
+    </div>
+    <div class="grid"><button class="app" data-app="msg" aria-label="메시지"><span class="ic" style="--g1:#86e3a8;--g2:#34c06e"><svg viewBox="0 0 28 28"><path d="M14 5c6 0 10.5 3.7 10.5 8.3S20 21.6 14 21.6c-1.1 0-2.2-.1-3.2-.4L6 23.5l1.3-4.1C5 17.9 3.5 15.7 3.5 13.3 3.5 8.7 8 5 14 5z" fill="#fff" stroke="none"/></svg></span><span class="lb">메시지</span></button><button class="app" data-app="travel" aria-label="여행"><span class="ic" style="--g1:#4a5f9e;--g2:#2b3a6b"><svg viewBox="0 0 28 28"><path d="M4 7.5l6-2.5 8 2.5 6-2.5v15.5l-6 2.5-8-2.5-6 2.5z"/><path d="M10 5v15.5M18 7.5V23"/><path d="M14 11.2c0 2.2-2.3 4.3-2.3 4.3s-2.3-2.1-2.3-4.3a2.3 2.3 0 0 1 4.6 0z" stroke-width="1.5"/></svg></span><span class="lb">여행</span></button><button class="app" data-app="music" aria-label="음악"><span class="ic" style="--g1:#ff9ec2;--g2:#f0628f"><svg viewBox="0 0 28 28"><path d="M5.5 17v-3a8.5 8.5 0 0 1 17 0v3"/><rect x="4" y="16" width="5" height="8" rx="2"/><rect x="19" y="16" width="5" height="8" rx="2"/></svg></span><span class="lb">음악</span></button><button class="app" data-app="video" aria-label="플레이"><span class="ic" style="--g1:#2a1b24;--g2:#0d0b0f"><svg viewBox="0 0 28 28" class="ott"><path d="M7 5.5l7 9 7-9" stroke="#ff4f8b" stroke-width="3.4"/><path d="M14 14.5V23" stroke="#ff4f8b" stroke-width="3.4"/><path d="M17.5 19.5l5 3-5 3z" fill="#fff" stroke="none"/></svg></span><span class="lb">플레이</span></button><button class="app" data-app="cat" aria-label="레오"><span class="ic" style="--g1:#ffd2a1;--g2:#f6a96a"><img class="photo-ic" src="images/leo/leo-icon.webp" alt=""></span><span class="lb">레오</span></button><button class="app" data-app="home" aria-label="포트폴리오"><span class="ic" style="--g1:#5b5f6e;--g2:#2f323d"><svg viewBox="0 0 28 28"><rect x="4" y="9" width="20" height="14" rx="2.5"/><path d="M10.5 9V7a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2M4 14.5h20"/></svg></span><span class="lb">포트폴리오</span></button></div>
+    <div class="dock"><button class="app" data-app="msg" aria-label="메시지"><span class="ic" style="--g1:#86e3a8;--g2:#34c06e"><svg viewBox="0 0 28 28"><path d="M14 5c6 0 10.5 3.7 10.5 8.3S20 21.6 14 21.6c-1.1 0-2.2-.1-3.2-.4L6 23.5l1.3-4.1C5 17.9 3.5 15.7 3.5 13.3 3.5 8.7 8 5 14 5z" fill="#fff" stroke="none"/></svg></span></button><button class="app" data-app="travel" aria-label="여행"><span class="ic" style="--g1:#4a5f9e;--g2:#2b3a6b"><svg viewBox="0 0 28 28"><path d="M4 7.5l6-2.5 8 2.5 6-2.5v15.5l-6 2.5-8-2.5-6 2.5z"/><path d="M10 5v15.5M18 7.5V23"/><path d="M14 11.2c0 2.2-2.3 4.3-2.3 4.3s-2.3-2.1-2.3-4.3a2.3 2.3 0 0 1 4.6 0z" stroke-width="1.5"/></svg></span></button><button class="app" data-app="music" aria-label="음악"><span class="ic" style="--g1:#ff9ec2;--g2:#f0628f"><svg viewBox="0 0 28 28"><path d="M5.5 17v-3a8.5 8.5 0 0 1 17 0v3"/><rect x="4" y="16" width="5" height="8" rx="2"/><rect x="19" y="16" width="5" height="8" rx="2"/></svg></span></button><button class="app" data-app="video" aria-label="플레이"><span class="ic" style="--g1:#2a1b24;--g2:#0d0b0f"><svg viewBox="0 0 28 28" class="ott"><path d="M7 5.5l7 9 7-9" stroke="#ff4f8b" stroke-width="3.4"/><path d="M14 14.5V23" stroke="#ff4f8b" stroke-width="3.4"/><path d="M17.5 19.5l5 3-5 3z" fill="#fff" stroke="none"/></svg></span></button><button class="app" data-app="home" aria-label="포트폴리오"><span class="ic" style="--g1:#5b5f6e;--g2:#2f323d"><svg viewBox="0 0 28 28"><rect x="4" y="9" width="20" height="14" rx="2.5"/><path d="M10.5 9V7a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2M4 14.5h20"/></svg></span></button></div>
+  </div>
+
+  <!-- 앱 -->
+  <div class="appview" id="appview">
+    <div class="nav"><div><h1 id="apTitle">여행</h1><p id="apSub"></p></div><button class="done" id="apDone">완료</button></div>
+    <div class="body">
+      <div class="pane" data-pane="msg">
+        <div class="chat">
+          <div class="chat-head"><span class="av">예은</span><b>예은 ✦</b><small>보통 몇 분 안에 답장해요</small></div>
+          <div class="log" id="log"></div>
+          <div class="qbar"><p class="hint">예은에게 물어보기</p><div class="qs" id="qs"></div></div>
+        </div>
+      </div>
+      <div class="pane" data-pane="travel">
+        <div class="asia">
+          <div class="map-card">
+            <svg id="asia" aria-label="동아시아·동남아시아 지도"></svg>
+            <div id="asiaTip"></div>
+            <div class="map-msg" id="mapMsg"></div>
+            <div class="legend"><span><i style="background:#e2558f"></i>다녀온 나라</span><span><i style="background:#ffd36b"></i>우리 집</span><span><i style="background:#fff;border:2px solid #c23d73"></i>다녀온 도시</span></div>
+          </div>
+          <div class="side">
+            <div class="stats-row" id="statsRow"></div>
+            <div class="firsts" id="firsts"></div>
+            <div class="years"><div class="k">YEARLY DEPARTURES</div><div class="bars" id="bars"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="pane" data-pane="music">
+        <div class="music"><div class="album"><div class="bigdisc"></div><div class="now" id="now">곡을 골라주세요</div>
+          <div class="prog"><div class="pbar" id="pbar"><i id="pfill"></i></div><div class="tm"><span id="tCur">0:00</span><span id="tDur">0:00</span></div></div>
+          <div class="ctrl"><button id="bPrev" aria-label="이전 곡"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="4" y="5" width="2.6" height="14" rx="1"/><path d="M20 5.5v13a1 1 0 0 1-1.5.86L8 12.86a1 1 0 0 1 0-1.72L18.5 4.64A1 1 0 0 1 20 5.5z"/></svg></button><button class="pp" id="bPlay" aria-label="재생/일시정지">▶</button><button id="bNext" aria-label="다음 곡"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="17.4" y="5" width="2.6" height="14" rx="1"/><path d="M4 5.5v13a1 1 0 0 0 1.5.86L16 12.86a1 1 0 0 0 0-1.72L5.5 4.64A1 1 0 0 0 4 5.5z"/></svg></button></div></div>
+          <div><ul class="tracks" id="tracks"></ul><p class="pnote" id="pnote"></p></div></div>
+      </div>
+      <div class="pane" data-pane="video">
+        <section class="hero" id="hero"></section>
+        <div id="rows"></div>
+      </div>
+      <div class="pane" data-pane="cat">
+        <div class="catpane" id="catpane">
+          <div class="leo-wrap" id="leo" role="button" aria-label="레오 쓰다듬기">
+            <div class="bubble" id="bubble">냐옹~</div>
+            <div class="leo-float"><div class="leo"><img src="images/leo/leo.jpg" alt="고양이 레오"></div></div>
+          </div>
+          <div class="leo-name"><b>레오</b><span>LEO · 🐾</span></div>
+          <div class="leo-count" id="leoCount">레오를 눌러서 쓰다듬어 주세요</div>
+          <button class="snd" id="snd">🔈 소리 켜짐</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="watch" id="watch"><button class="x" id="watchX">✕ 閉じる</button><div class="screenbox" id="watchBox"></div><div id="watchTitle" style="color:#fff;font-weight:800;font-size:18px"></div></div>
+  <div class="viewer" id="viewer"><img id="viewerImg" alt=""><p id="viewerCap"></p></div>
+  <div class="homebar" id="homebar" title="홈으로"></div>
+</div></div></div>
+
+<script>
+/* =========================================================
+   ✏️ 여기만 고치면 내용이 바뀌어요
+   ========================================================= */
+// 💬 메시지 앱 — q: 질문 버튼, a: 예은의 답장(여러 개면 말풍선이 나눠서 와요)
+const CHAT_HELLO = ['안녕~ 궁금한 거 있으면 질문해줘!'];
+const CHAT = [
+  { q:'MBTI가 뭐야?',               a:['ESTP! ✌️'] },
+  { q:'스트레스 받으면 어떻게 풀어?', a:['산책하거나 노래 들으면서 푸는 것 같아 🎧'] },
+  { q:'요즘 빠져 있는 거 있어?',      a:['히프노시스 마이크라는 장르에 빠져 있어! 🎤'] },
+  { q:'일본어랑 중국어 중에 뭐가 더 좋아?', a:['일본어가 좀 더 쉽게 느껴져서 좋은 것 같아!'] },
+  { q:'가장 기억에 남는 여행지는?',   a:['도쿄! 🗼', '도쿄는 10번 정도 간 것 같은데 언제나 또 가고 싶어', '그래서 도쿄에서 취업하고 싶어!'] },
+  { q:'일본 가면 꼭 먹는 거 있어?',   a:['스시로에 바질치즈새우초밥을 정말 좋아해서', '3일 연속 스시로 간 적도 있어 ㅎㅎ'] },
+  { q:'다음에 꼭 가보고 싶은 곳은?',  a:['유럽이나 미국! ✈️'] },
+];
+const CHAT_BYE = '궁금한 거 생기면 또 놀러와-!';
+
+// 🗺️ 다녀온 나라 — id는 지도 데이터의 나라 번호(ISO), at은 작은 나라·지역을 표시할 위치 [경도, 위도]
+const COUNTRIES = {
+  JP:{ name:'일본',      flag:'🇯🇵', id:'392' },
+  MY:{ name:'말레이시아', flag:'🇲🇾', id:'458' },
+  PH:{ name:'필리핀',    flag:'🇵🇭', id:'608' },
+  SG:{ name:'싱가포르',  flag:'🇸🇬', id:'702', at:[103.82, 1.35] },
+  TW:{ name:'대만',      flag:'🇹🇼', id:'158' },
+  VN:{ name:'베트남',    flag:'🇻🇳', id:'704' },
+  HK:{ name:'홍콩',      flag:'🇭🇰', id:'344', at:[114.17, 22.32] },
+  CN:{ name:'중국',      flag:'🇨🇳', id:'156' },
+  MO:{ name:'마카오',    flag:'🇲🇴', id:'446', at:[113.54, 22.19] },
+};
+const HOME = { name:'한국', flag:'🇰🇷', id:'410', city:'서울', at:[126.98, 37.57] };
+// 도시 위치 [경도, 위도]
+const CITY_AT = {
+  '코타키나발루':[116.07,5.98], '세부':[123.89,10.32], '오사카':[135.50,34.69], '싱가포르':[103.82,1.35], '타이페이':[121.56,25.03],
+  '도쿄':[139.69,35.69], '나트랑':[109.19,12.24], '나고야':[136.91,35.18], '홍콩':[114.17,22.32], '후쿠오카':[130.40,33.59],
+  '베이징':[116.40,39.90], '상하이':[121.47,31.23], '마카오':[113.54,22.19], '싼야':[109.51,18.25], '삿포로':[141.35,43.06],
+};
+const TRIPS = [
+  { c:'MY', city:'코타키나발루', from:'2016-10-16', to:'2016-10-20' },
+  { c:'PH', city:'세부',        from:'2017-08-14', to:'2017-08-18' },
+  { c:'JP', city:'오사카',      from:'2019-02-20', to:'2019-02-22' },
+  { c:'JP', city:'오사카',      from:'2023-02-17', to:'2023-02-20' },
+  { c:'SG', city:'싱가포르',    from:'2023-07-18', to:'2023-07-22' },
+  { c:'TW', city:'타이페이',    from:'2023-12-17', to:'2023-12-21' },
+  { c:'JP', city:'도쿄',        from:'2024-02-24', to:'2024-02-27' },
+  { c:'VN', city:'나트랑',      from:'2024-06-30', to:'2024-07-04' },
+  { c:'JP', city:'오사카',      from:'2024-08-11', to:'2024-08-14' },
+  { c:'JP', city:'나고야',      from:'2024-09-02', to:'2024-09-03' },
+  { c:'HK', city:'홍콩',        from:'2024-09-07', to:'2024-09-08' },
+  { c:'JP', city:'도쿄',        from:'2024-11-28', to:'2024-12-01' },
+  { c:'JP', city:'후쿠오카',    from:'2024-12-05', to:'2024-12-09' },
+  { c:'CN', city:'베이징',      from:'2025-02-27', to:'2025-02-28' },
+  { c:'CN', city:'상하이',      from:'2025-03-28', to:'2025-03-31' },
+  { c:'MO', city:'마카오',      from:'2025-04-04', to:'2025-04-07' },
+  { c:'JP', city:'도쿄',        from:'2025-06-06', to:'2025-06-09' },
+  { c:'JP', city:'도쿄',        from:'2025-07-19', to:'2025-07-20' },
+  { c:'CN', city:'싼야',        from:'2025-08-14', to:'2025-08-17' },
+  { c:'JP', city:'도쿄',        from:'2025-09-13', to:'2025-09-14' },
+  { c:'JP', city:'오사카',      from:'2025-11-15', to:'2025-11-18' },
+  { c:'JP', city:'나고야',      from:'2025-12-20', to:'2025-12-24' },
+  { c:'JP', city:'도쿄 · 삿포로', from:'2026-01-17', to:'2026-01-22' },
+  { c:'CN', city:'베이징',      from:'2026-03-07', to:'2026-03-09' },
+  { c:'JP', city:'오사카 · 도쿄', from:'2026-05-04', to:'2026-05-07' },
+  { c:'JP', city:'도쿄',        from:'2026-07-06', to:'2026-07-13' },
+  { c:'JP', city:'도쿄',        from:'2026-08-28', to:'2026-09-03' },
+  { c:'JP', city:'도쿄',        from:'2026-10-01', to:'2026-10-06' },
+];
+// 🎧 자주 듣는 노래 — youtube 칸에 유튜브 영상 ID(주소의 v= 뒤 11글자)
+const PLAYLIST = [
+  { title:'ヒプノシスマイク -Division Battle Anthem- +', artist:'Division All Stars · ヒプノシスマイク', youtube:'KFUIkCHTCWA' },
+  { title:'Shibuya Marble Texture -PCCS-',               artist:'Fling Posse · ヒプノシスマイク',      youtube:'Xk_aNO8-y9Y' },
+  { title:'PANORAMA',                                    artist:'TRIGGER · アイドリッシュセブン',      youtube:'XAd29eRT1Oo' },
+  { title:'SICK SICK SICK',                              artist:'碓氷真澄 · A3!',                      youtube:'mTWZ3hNMkK0' },
+  { title:'White Noise',                                 artist:'Official髭男dism',                    youtube:'LIk-U4esgM8' },
+  { title:'花',                                          artist:'藤井 風',                              youtube:'SfPkl7lol7g' },
+  { title:'MY STARWAY',                                  artist:'アイカツ!',                            youtube:'Dp614BIZz9U' },
+];
+// 📺 YEEUN PLAY — 좋아하는 애니
+//   youtube: 공식 PV·예고편 유튜브 영상 ID(주소의 v= 뒤 11글자)를 넣으면 재생돼요
+//   poster : 직접 만든 썸네일 이미지 경로(예: 'images/anime/hypmic.jpg'). 비워두면 자동 포스터가 그려져요
+const ANIME = {
+  hypmic: { title:'映画\nヒプノシスマイク', full:'映画 ヒプノシスマイク', ko:'히프노시스 마이크 -Division Rap Battle- (극장판)', sub:'-Division Rap Battle-', jp:'映画 ヒプノシスマイク', year:2025, genre:'映画・ヒップホップ',
+            note:'観客の投票でバトルの勝敗とストーリーが変わる、日本初の観客参加型ラップバトル映画', colors:['#1b1b2f','#e2558f','#ffd36b'], motif:'mic', progress:.7, youtube:'N6XpO4sMVC0', poster:'' },
+  i7:     { title:'アイドリッシュセブン', ko:'아이돌리쉬 세븐', sub:'IDOLiSH7', jp:'アイドリッシュセブン', year:2018, genre:'アイドル・音楽',
+            note:'7人組の新人アイドルグループが、頂点を目指して成長していく物語', colors:['#2a2f6b','#7fb2ff','#ffffff'], motif:'stage', progress:.4, youtube:'Jc-Uiz0y2d8', poster:'' },
+  mha:    { title:'僕のヒーロー\nアカデミア', ko:'나의 히어로 아카데미아', sub:'My Hero Academia', jp:'僕のヒーローアカデミア', year:2016, genre:'アクション・ヒーロー',
+            note:'“個性”を持たずに生まれた少年が、最高のヒーローを目指す物語', colors:['#13325b','#2bb3a3','#ffd84d'], motif:'bolt', progress:.85, youtube:'o0L1YC9YgxM', poster:'' },
+  tokrev: { title:'東京リベンジャーズ', ko:'도쿄 리벤저스', sub:'Tokyo Revengers', jp:'東京リベンジャーズ', year:2021, genre:'アクション・タイムリープ',
+            note:'過去へタイムリープした主人公が、大切な人を守るため再び立ち上がる物語', colors:['#111111','#c9a227','#f4f1e8'], motif:'clock', youtube:'r9M34VgTfzY', poster:'' },
+  aikatsu:{ title:'アイカツ！', ko:'아이카츠!', sub:'Aikatsu!', jp:'アイカツ！', year:2012, genre:'アイドル・成長',
+            note:'アイドル学校に入学した少女たちが、ステージで輝くまでの物語', colors:['#ff8fc7','#ffd3ea','#ffe27a'], motif:'star', youtube:'ZqtJ39GvLTg', poster:'' },
+  bluelock:{ title:'ブルーロック', ko:'블루 록', sub:'BLUELOCK', jp:'ブルーロック', year:2022, genre:'スポーツ・サッカー',
+            note:'最強のストライカーをたった一人選び抜くプロジェクトに集まった選手たちの物語', colors:['#0b1638','#1f6fff','#9fe3ff'], motif:'ball', youtube:'scNHgkRlJn4', poster:'' },
+};
+const VIDEO_ROWS = [
+  { title:'イェウンのPICK · 推しアニメ', items:['hypmic','i7','mha','tokrev','aikatsu','bluelock'] },
+  { title:'続きを見る', items:['mha','hypmic','i7'] },
+  { title:'音楽 · アイドル', items:['hypmic','i7','aikatsu'] },
+  { title:'熱血 · アクション · スポーツ', items:['mha','tokrev','bluelock'] },
+];
+const FEATURED = 'hypmic';
+/* ========================================================= */
+
+const $ = s => document.querySelector(s);
+const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const yt = id => `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0`;
+const screen = $('#screen');
+
+// 화면 크기에 맞게 태블릿 축소
+function fit(){ const s = Math.min((innerWidth - 16) / 1220, (innerHeight - 16) / 860); $('#device').style.transform = `scale(${s})`; }
+addEventListener('resize', fit); fit();
+
+// 메신저 알림: 입력 중… → 메시지 도착
+setTimeout(() => document.getElementById('notif').classList.add('sent'), 2600);
+
+// 시계
+const DAYS = ['일','월','화','수','목','금','토'];
+function tick(){
+  const d = new Date(), t = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  const ds = `${d.getMonth()+1}월 ${d.getDate()}일 ${DAYS[d.getDay()]}요일`;
+  $('#sbTime').textContent = t; $('#lkTime').textContent = t; $('#wdTime').textContent = t;
+  $('#lkDate').textContent = ds;
+}
+tick(); setInterval(tick, 10000);
+
+// 여권 위젯
+
+/* ---------- 잠금 해제: 위로 밀기 / 클릭 / 키보드 ---------- */
+const lock = $('#lock');
+let sy = 0, dy = 0, dragging = false;
+function unlock(){
+  if (screen.classList.contains('unlocked')) return;
+  lock.classList.add('gone'); lock.style.transform = ''; screen.classList.add('unlocked');
+  setTimeout(() => $('#banner').classList.add('show'), 900);
+  window._bn = setTimeout(() => $('#banner').classList.remove('show'), 5600);
+}
+$('#banner').addEventListener('click', () => { clearTimeout(window._bn); $('#banner').classList.remove('show'); openApp('msg', $('#banner')); });
+lock.addEventListener('pointerdown', e => { dragging = true; sy = e.clientY; dy = 0; lock.setPointerCapture(e.pointerId); lock.classList.add('dragging'); });
+lock.addEventListener('pointermove', e => { if (!dragging) return; dy = Math.min(0, e.clientY - sy); lock.style.transform = `translateY(${dy}px)`; lock.style.opacity = 1 + dy / 500; });
+lock.addEventListener('pointerup', () => {
+  if (!dragging) return; dragging = false; lock.classList.remove('dragging');
+  if (dy < -90 || Math.abs(dy) < 4) unlock(); else { lock.style.transform = ''; lock.style.opacity = ''; }
+});
+lock.addEventListener('keydown', e => { if (['Enter',' ','ArrowUp'].includes(e.key)){ e.preventDefault(); unlock(); } });
+addEventListener('wheel', e => { if (!lock.classList.contains('gone') && e.deltaY > 0) unlock(); }, {passive:true});
+
+/* ---------- 앱 열기/닫기 ---------- */
+const appview = $('#appview');
+const TITLES = { msg:['메시지','예은 ✦ · 질문을 눌러보세요'], travel:['여행','다녀온 나라 · 나라나 도시에 마우스를 올려보세요'], music:['음악',"Yeeun's Playlist"], video:['PLAY','イェウンの推しアニメ'], cat:['레오','우리 집 고양이 🐾'] };
+function openApp(key, from){
+  if (key === 'home'){ location.href = 'index.html'; return; }
+  const r = from.getBoundingClientRect(), s = screen.getBoundingClientRect();
+  appview.style.transformOrigin = `${(r.left + r.width/2 - s.left) / s.width * 100}% ${(r.top + r.height/2 - s.top) / s.height * 100}%`;
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('show', p.dataset.pane === key));
+  $('#apTitle').textContent = TITLES[key][0]; $('#apSub').textContent = TITLES[key][1];
+  appview.classList.toggle('dark', key === 'video');
+  $('#apDone').textContent = key === 'video' ? '完了' : '완료';
+  appview.classList.add('open'); screen.classList.add('app-open');
+  if (key === 'travel') loadMap();
+  if (key === 'msg' && !chatStarted){ chatStarted = true; startChat(); }
+}
+function closeApp(){
+  if (!appview.classList.contains('open')) return;
+  appview.classList.remove('open'); screen.classList.remove('app-open');
+  closeWatch();
+}
+document.querySelectorAll('[data-app]').forEach(b => b.addEventListener('click', () => openApp(b.dataset.app, b)));
+$('#apDone').addEventListener('click', closeApp);
+$('#homebar').addEventListener('click', closeApp);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if ($('#viewer').classList.contains('open')) { $('#viewer').classList.remove('open'); return; }
+  if ($('#watch').classList.contains('open')) { closeWatch(); return; }
+  closeApp();
+});
+$('#viewer').addEventListener('click', () => $('#viewer').classList.remove('open'));
+
+/* ---------- 🗺️ 여행: 동아시아·동남아시아 지도 ---------- */
+TRIPS.sort((a, b) => a.from.localeCompare(b.from));
+const days = t => Math.round((new Date(t.to) - new Date(t.from)) / 864e5) + 1;
+const cnt = {}; TRIPS.forEach(t => cnt[t.c] = (cnt[t.c] || 0) + 1);
+const cities = {}; TRIPS.forEach(t => (t.city || '').split(' · ').filter(Boolean).forEach(c => { (cities[c] = cities[c] || { c:t.c, n:0 }).n++; }));
+const BY_ID = {}; Object.entries(COUNTRIES).forEach(([k, v]) => BY_ID[v.id] = k);
+
+// 지도 범위와 투영 (위도 25° 기준 등장방형)
+const LON0 = 94, LON1 = 150, LAT0 = 47, LAT1 = -9, K = Math.cos(25 * Math.PI / 180), SC = 12;
+const VW = (LON1 - LON0) * K * SC, VH = (LAT0 - LAT1) * SC;
+const P = ([lon, lat]) => [((lon - LON0) * K * SC), ((LAT0 - lat) * SC)];
+const svg = $('#asia');
+svg.setAttribute('viewBox', `0 0 ${VW.toFixed(0)} ${VH.toFixed(0)}`);
+svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+function grat(){
+  let g = '';
+  for (let lon = 100; lon <= 150; lon += 10){ const [x] = P([lon, 0]); g += `<line class="grat" x1="${x}" y1="0" x2="${x}" y2="${VH}"/>`; }
+  for (let lat = 0; lat <= 40; lat += 10){ const [, y] = P([0, lat]); g += `<line class="grat" x1="0" y1="${y}" x2="${VW}" y2="${y}"/>`; }
+  return g;
+}
+const LABEL_POS = { '도쿄':'r', '삿포로':'r', '세부':'r', '타이페이':'r', '상하이':'r', '오사카':'b', '나고야':'-', '후쿠오카':'-', '마카오':'-' };
+const level = n => n >= 10 ? 'v3' : n >= 3 ? 'v2' : 'v1';
+function pinsSVG(){
+  let out = '';
+  const [hx, hy] = P(HOME.at);
+  out += `<g class="pin homep" data-tip="${HOME.flag} ${HOME.city}|우리 집"><circle class="dot" cx="${hx}" cy="${hy}" r="6"/><text x="${hx + 10}" y="${hy + 5}">${HOME.city}</text></g>`;
+  Object.entries(cities).forEach(([name, v]) => {
+    const at = CITY_AT[name]; if (!at) return;
+    const [x, y] = P(at), C = COUNTRIES[v.c];
+    const pos = LABEL_POS[name] || 'l';
+    const lbl = pos === '-' ? '' : pos === 'b' ? `<text x="${x}" y="${y + 20}" text-anchor="middle">${name}</text>`
+      : `<text x="${pos === 'l' ? x - 10 : x + 10}" y="${y + 5}" text-anchor="${pos === 'l' ? 'end' : 'start'}">${name}</text>`;
+    out += `<g class="pin" data-tip="${C.flag} ${name}|${C.name} · ${v.n}번 방문"><circle class="ping" cx="${x}" cy="${y}" r="5"/><circle class="dot" cx="${x}" cy="${y}" r="5.5"/>${lbl}</g>`;
+  });
+  return out;
+}
+function draw(countries){
+  let land = '';
+  countries.forEach(c => {
+    const k = BY_ID[c.id];
+    const cls = c.id === HOME.id ? 'land myhome' : k && !COUNTRIES[k].at ? `land vis ${level(cnt[k])}` : 'land';
+    land += `<path class="${cls}" data-id="${c.id}" ${k ? `data-k="${k}"` : ''} d="${c.d}"/>`;
+  });
+  svg.innerHTML = `<rect class="sea" width="${VW}" height="${VH}"/>${grat()}<g>${land}</g><g id="pins">${pinsSVG()}</g>`;
+  bindTips();
+}
+function topoToPaths(topo){
+  const [sx, sy] = topo.transform.scale, [tx, ty] = topo.transform.translate;
+  const arcs = topo.arcs.map(a => { let x = 0, y = 0; return a.map(([dx, dy]) => { x += dx; y += dy; return [x * sx + tx, y * sy + ty]; }); });
+  const ring = idx => { const pts = []; idx.forEach((i, k) => { const a = i >= 0 ? arcs[i] : arcs[~i].slice().reverse(); pts.push(...(k ? a.slice(1) : a)); }); return pts; };
+  const inBox = pts => pts.some(([lon, lat]) => lon > LON0 - 15 && lon < LON1 + 15 && lat > LAT1 - 15 && lat < LAT0 + 15);
+  const toD = rings => rings.map(r => { const pts = ring(r); return inBox(pts) ? 'M' + pts.map(q => P(q).map(v => v.toFixed(1)).join(',')).join('L') + 'Z' : ''; }).join('');
+  return topo.objects.countries.geometries.filter(g => g.arcs).map(g => ({ id: g.id, d: g.type === 'Polygon' ? toD(g.arcs) : g.arcs.map(toD).join('') })).filter(c => c.d);
+}
+const tip = $('#asiaTip'), card = svg.parentElement;
+function bindTips(){
+  const show = (e, html) => {
+    const b = card.getBoundingClientRect(), k = b.width / card.offsetWidth;
+    tip.innerHTML = html; tip.style.left = (e.clientX - b.left) / k + 'px'; tip.style.top = (e.clientY - b.top) / k + 'px'; tip.style.opacity = 1;
+  };
+  svg.onmousemove = e => {
+    const pin = e.target.closest('.pin');
+    if (pin){ const [a, b] = pin.dataset.tip.split('|'); return show(e, `${a}<small>${b}</small>`); }
+    const p = e.target.closest('path.land');
+    if (p && p.dataset.k){ const C = COUNTRIES[p.dataset.k], cs = Object.keys(cities).filter(n => cities[n].c === p.dataset.k);
+      return show(e, `${C.flag} ${C.name} · ${cnt[p.dataset.k]}회<small>${cs.join(', ')}</small>`); }
+    if (p && p.dataset.id === HOME.id) return show(e, `${HOME.flag} ${HOME.name}<small>우리 집</small>`);
+    tip.style.opacity = 0;
+  };
+  svg.onmouseleave = () => tip.style.opacity = 0;
+}
+function highlight(k){
+  svg.querySelectorAll('path.on').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.k === k));
+  if (k) svg.querySelectorAll(`path[data-k="${k}"]`).forEach(p => p.classList.add('on'));
+}
+// 현황 (예전 여권 첫 장 내용)
+(function stats(){
+  const order = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]);
+  const totalDays = TRIPS.reduce((s, t) => s + days(t), 0);
+  $('#statsRow').innerHTML = `<div class="stat dep"><b>${TRIPS.length}<em>번</em></b><span>지금까지 출국한 횟수</span></div>
+    <div class="stat"><b>${order.length}</b><span>나라 · 지역</span></div>
+    <div class="stat"><b>${totalDays}</b><span>일 동안 여행</span></div>
+    <div class="stat list"><div class="k">TRAVEL RECORD</div><div class="chips">${order.map(c => `<span class="chip" data-k="${c}">${COUNTRIES[c].flag} ${COUNTRIES[c].name} ${cnt[c]}</span>`).join('')}</div></div>`;
+  const f = TRIPS[0], l = TRIPS[TRIPS.length - 1];
+  const fav = Object.entries(cities).sort((a, b) => b[1].n - a[1].n)[0];
+  $('#firsts').innerHTML = `<div class="k">♥ 가장 많이 방문한 도시</div>
+    <div class="fav"><span class="city">${COUNTRIES[fav[1].c].name} ${fav[0]}</span><span class="n"><b>${fav[1].n}</b>번 방문</span></div>`;
+  const yc = {}; TRIPS.forEach(t => yc[t.from.slice(0, 4)] = (yc[t.from.slice(0, 4)] || 0) + 1);
+  const y0 = +f.from.slice(0, 4), y1 = +l.from.slice(0, 4), mx = Math.max(...Object.values(yc));
+  let bars = ''; for (let y = y0; y <= y1; y++){ const n = yc[y] || 0;
+    bars += `<div class="bar">${n ? `<b>${n}</b>` : ''}<i class="${n ? '' : 'zero'}" style="height:${n ? Math.max(8, n / mx * 100) : 4}%"></i><span>'${String(y).slice(2)}</span></div>`; }
+  $('#bars').innerHTML = bars;
+  document.querySelectorAll('.chip').forEach(c => { c.addEventListener('mouseenter', () => highlight(c.dataset.k)); c.addEventListener('mouseleave', () => highlight(null)); });
+})();
+let mapLoaded = false;
+async function loadMap(){
+  if (mapLoaded) return;
+  draw([]);   // 지도 데이터 오기 전에도 도시 핀은 먼저 표시
+  try {
+    let topo = null;
+    for (const u of ['https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json', 'https://unpkg.com/world-atlas@2/countries-50m.json']){
+      try { const r = await fetch(u); if (r.ok){ topo = await r.json(); break; } } catch(e){}
+    }
+    if (!topo) throw 0;
+    draw(topoToPaths(topo)); mapLoaded = true; $('#mapMsg').textContent = '';
+  } catch(e){ $('#mapMsg').textContent = '인터넷에 연결되면 나라 모양이 표시돼요'; }
+}
+
+/* ---------- 🎧 음악 (유튜브 영상은 숨기고 소리만 재생) ---------- */
+const tracksEl = $('#tracks');
+tracksEl.innerHTML = PLAYLIST.map((t, i) => `<li data-i="${i}"><div class="t"><b>${esc(t.title)}</b><span>${esc(t.artist)}</span></div><span class="pl">▶</span></li>`).join('');
+let ytp = null, ytReady = false, cur = -1, pendingIdx = null;
+const IS_FILE = location.protocol === 'file:'; // 파일을 더블클릭해서 열면 유튜브가 재생을 막음(오류 153)
+(function loadYT(){
+  window.onYouTubeIframeAPIReady = () => {
+    ytp = new YT.Player('ytAudioInner', { width:200, height:200, playerVars:{ autoplay:1, controls:0, playsinline:1, rel:0 },
+      events:{
+        onReady: () => { ytReady = true; if (pendingIdx !== null){ const i = pendingIdx; pendingIdx = null; playTrack(i); } },
+        onStateChange: e => {
+          const playing = e.data === YT.PlayerState.PLAYING;
+          screen.classList.toggle('playing', playing); $('#bPlay').textContent = playing ? '❚❚' : '▶';
+          if (e.data === YT.PlayerState.ENDED) playTrack((cur + 1) % PLAYLIST.length);
+        },
+        onError: () => {
+          const link = `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(PLAYLIST[cur].youtube)}" target="_blank" rel="noopener" style="color:inherit;font-weight:700">유튜브에서 듣기 ↗</a>`;
+          $('#pnote').innerHTML = (IS_FILE ? '파일을 직접 열면 유튜브가 막혀요. Live Server나 배포 주소로 열어 주세요. ' : '이 곡은 여기서 재생할 수 없어요. ') + link;
+        }
+      } });
+  };
+  const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api';
+  sc.onerror = () => { $('#pnote').textContent = '인터넷에 연결되면 노래를 들을 수 있어요.'; };
+  document.head.appendChild(sc);
+})();
+function playTrack(i){
+  const t = PLAYLIST[i]; cur = i;
+  tracksEl.querySelectorAll('li').forEach(x => x.classList.toggle('on', +x.dataset.i === i));
+  $('#now').innerHTML = `<b>${esc(t.title)}</b>${esc(t.artist)}`;
+  $('#wmTitle').textContent = t.title; $('#wmArtist').textContent = t.artist; $('#pnote').textContent = '';
+  if (!t.youtube){ $('#pnote').textContent = '유튜브 링크를 추가하면 재생돼요.'; return; }
+  if (!ytReady){ pendingIdx = i; $('#pnote').textContent = '불러오는 중…'; return; }
+  ytp.loadVideoById(t.youtube);
+}
+tracksEl.querySelectorAll('li').forEach(li => li.addEventListener('click', () => playTrack(+li.dataset.i)));
+$('#bPlay').addEventListener('click', () => {
+  if (cur < 0) return playTrack(0);
+  if (!ytReady) return;
+  ytp.getPlayerState() === YT.PlayerState.PLAYING ? ytp.pauseVideo() : ytp.playVideo();
+});
+$('#bNext').addEventListener('click', () => playTrack((cur + 1) % PLAYLIST.length));
+$('#bPrev').addEventListener('click', () => {
+  if (ytReady && cur >= 0 && ytp.getCurrentTime() > 3) return ytp.seekTo(0, true);
+  playTrack((cur - 1 + PLAYLIST.length) % PLAYLIST.length);
+});
+$('#pbar').addEventListener('click', e => {
+  if (!ytReady || cur < 0) return;
+  const r = e.currentTarget.getBoundingClientRect(); ytp.seekTo((e.clientX - r.left) / r.width * ytp.getDuration(), true);
+});
+const mmss = x => { x = Math.max(0, Math.floor(x || 0)); return Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0'); };
+setInterval(() => {
+  if (!ytReady || cur < 0 || !ytp.getDuration) return;
+  const d = ytp.getDuration() || 0, c = ytp.getCurrentTime() || 0;
+  $('#pfill').style.width = d ? (c / d * 100) + '%' : 0; $('#tCur').textContent = mmss(c); $('#tDur').textContent = mmss(d);
+}, 500);
+// PLAY에서 영상 틀면 노래는 잠깐 멈춤
+function pauseMusic(){ if (ytReady && cur >= 0) ytp.pauseVideo(); }
+
+/* ---------- 📺 YEEUN PLAY ---------- */
+const MOTIF = {
+  mic:  c => `<g transform="translate(100 118)"><rect x="-22" y="-66" width="44" height="72" rx="22" fill="${c[1]}"/><g stroke="${c[0]}" stroke-width="3" opacity=".5">${[-48,-38,-28,-18,-8].map(y=>`<line x1="-22" y1="${y}" x2="22" y2="${y}"/>`).join('')}</g><path d="M-34 -14 v8 a34 34 0 0 0 68 0 v-8" fill="none" stroke="${c[2]}" stroke-width="6"/><line x1="0" y1="28" x2="0" y2="50" stroke="${c[2]}" stroke-width="6"/><line x1="-20" y1="50" x2="20" y2="50" stroke="${c[2]}" stroke-width="6"/></g>`,
+  stage:c => `<g opacity=".9">${[40,100,160].map((x,i)=>`<polygon points="${x-6},0 ${x+6},0 ${x+40-i*40},180 ${x-40+i*40-0},180" fill="${c[2]}" opacity=".18"/>`).join('')}</g><g transform="translate(100 112)" fill="${c[1]}">${[0,1,2,3,4,5,6].map(i=>`<circle cx="${(i-3)*22}" cy="${Math.abs(i-3)*5}" r="7"/>`).join('')}</g><rect x="20" y="140" width="160" height="10" rx="3" fill="${c[2]}" opacity=".7"/>`,
+  bolt: c => `<path d="M112 30 L70 112 H100 L84 180 L136 92 H104 Z" fill="${c[2]}" stroke="${c[0]}" stroke-width="4" stroke-linejoin="round"/><circle cx="100" cy="105" r="78" fill="none" stroke="${c[1]}" stroke-width="6" opacity=".6"/>`,
+  clock:c => `<g transform="translate(100 105)"><circle r="62" fill="none" stroke="${c[1]}" stroke-width="6"/>${[...Array(12)].map((_,i)=>`<line y1="-54" y2="-46" stroke="${c[2]}" stroke-width="3" transform="rotate(${i*30})"/>`).join('')}<line y2="-40" stroke="${c[2]}" stroke-width="5" stroke-linecap="round" transform="rotate(-60)"/><line y2="-28" stroke="${c[2]}" stroke-width="6" stroke-linecap="round" transform="rotate(30)"/><path d="M-80 0 a80 80 0 0 1 30 -62" fill="none" stroke="${c[1]}" stroke-width="4"/><path d="M-56 -66 l6 6 l-10 2" fill="none" stroke="${c[1]}" stroke-width="4"/></g>`,
+  star: c => `<g transform="translate(100 105)"><path d="M0 -62 L17 -20 L62 -18 L27 10 L39 54 L0 30 L-39 54 L-27 10 L-62 -18 L-17 -20 Z" fill="${c[2]}" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>${[[-70,-50],[66,-56],[72,40],[-64,46]].map(([x,y])=>`<path d="M${x} ${y-9} l3 6 l6 3 l-6 3 l-3 6 l-3 -6 l-6 -3 l6 -3z" fill="#fff"/>`).join('')}<circle cx="0" cy="2" r="10" fill="#fff" opacity=".9"/></g>`,
+  ball: c => `<g transform="translate(100 105)"><circle r="56" fill="#fff" stroke="${c[0]}" stroke-width="4"/><polygon points="0,-20 19,-6 12,16 -12,16 -19,-6" fill="${c[0]}"/>${[0,72,144,216,288].map(a=>`<line y1="-20" y2="-52" stroke="${c[0]}" stroke-width="3" transform="rotate(${a})"/>`).join('')}<path d="M-120 40 L-60 20 M-130 10 L-64 0 M-120 -20 L-62 -18" stroke="${c[2]}" stroke-width="5" stroke-linecap="round" opacity=".8"/></g>`,
+};
+function posterSVG(a, wide){
+  const c = a.colors, W = wide ? 400 : 200, H = wide ? 180 : 300, id = 'g' + Math.random().toString(36).slice(2,8);
+  const motif = wide ? `<g transform="translate(220 -10) scale(.95)">${MOTIF[a.motif](c)}</g>` : `<g transform="translate(0 20)">${MOTIF[a.motif](c)}</g>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c[0]}"/><stop offset="1" stop-color="${c[1]}"/></linearGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#${id})"/>
+    <g opacity=".12" fill="#fff">${[...Array(18)].map((_,i)=>`<circle cx="${(i*53)%W}" cy="${(i*37)%H}" r="${2+(i%3)}"/>`).join('')}</g>
+    ${motif}
+  </svg>`;
+}
+const art = a => a.poster ? `<img src="${esc(a.poster)}" alt="">` : posterSVG(a, false);
+Object.values(ANIME).forEach(a => { a.full = a.full || a.title.replace('\n',''); });
+const f = ANIME[FEATURED];
+$('#hero').innerHTML = `<div class="hero-art">${f.poster ? `<img src="${esc(f.poster)}" alt="">` : posterSVG(f, true)}</div>
+  <div class="hero-txt"><div class="tag">PLAY おすすめ · ${f.genre}</div><h2>${esc(f.full)}</h2><div class="hsub">${esc(f.sub)} · ${f.year}</div><p>${esc(f.note)}</p>
+  <div class="btns"><button class="play" data-a="${FEATURED}">▶ 再生</button><button class="info" data-info="${FEATURED}">ⓘ 詳細</button></div></div>`;
+$('#rows').innerHTML = VIDEO_ROWS.map(r => `<section class="row"><h3>${esc(r.title)}</h3><div class="posters">${r.items.map(k => {
+  const a = ANIME[k], cont = r.title.includes('続き');
+  return `<button class="poster" data-a="${k}" aria-label="${esc(a.full)}"><span class="art">${art(a)}</span>
+    <span class="cap"><em>${esc(a.sub)}</em>${esc(a.title).replace('\n','<br>')}<small>${a.year} · ${a.genre}</small></span>${cont && a.progress ? `<span class="bar-prog"><i style="width:${a.progress * 100}%"></i></span>` : ''}</button>`;
+}).join('')}</div></section>`).join('');
+document.querySelectorAll('#hero [data-a], .poster[data-a]').forEach(b => b.addEventListener('click', () => openTitle(b.dataset.a)));
+document.querySelectorAll('[data-info]').forEach(b => b.addEventListener('click', () => openTitle(b.dataset.info)));
+function openTitle(k){
+  const a = ANIME[k];
+  const ytLink = a.youtube ? `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(a.youtube)}" target="_blank" rel="noopener" style="color:#fff;font-weight:700">YouTubeで見る ↗</a>` : '';
+  $('#watchBox').innerHTML = a.youtube && !IS_FILE ? `<iframe src="${yt(a.youtube)}" title="${esc(a.title)}" allow="autoplay; encrypted-media; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
+    : a.youtube ? `<div class="nosig" style="background:linear-gradient(135deg,${a.colors[0]},${a.colors[1]})">${esc(a.full)}<small style="margin-top:8px">ファイルを直接開くとYouTubeが再生できません</small><small style="margin-top:8px">${ytLink}</small></div>`
+    : `<div class="nosig" style="background:linear-gradient(135deg,${a.colors[0]},${a.colors[1]})">${esc(a.full)}<small>${esc(a.sub)} · ${a.year}</small><small style="margin-top:8px">公式PVのYouTubeリンクを追加すると、ここで再生されます</small></div>`;
+  $('#watchTitle').innerHTML = `${esc(a.full)} <span style="font-weight:500;color:#b9adc6;font-size:14px">· ${esc(a.sub)} · ${a.genre}</span><div style="font-weight:500;font-size:14px;color:#d9d0e0;margin-top:6px">${esc(a.note)}</div>${ytLink ? `<div style="font-weight:500;font-size:13px;margin-top:8px">${ytLink}</div>` : ''}`;
+  pauseMusic(); $('#watch').classList.add('open');
+}
+function closeWatch(){ $('#watch').classList.remove('open'); $('#watchBox').innerHTML = ''; }
+$('#watchX').addEventListener('click', closeWatch);
+
+/* ---------- 💬 메시지 ---------- */
+const log = $('#log'), qs = $('#qs');
+let chatBusy = false, asked = 0, chatStarted = false;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function bub(cls, text){
+  const b = document.createElement('div'); b.className = 'bub ' + cls; b.textContent = text;
+  log.appendChild(b); log.scrollTop = log.scrollHeight; return b;
+}
+async function yeSay(lines){
+  for (const line of lines){
+    const t = document.createElement('div'); t.className = 'bub ye typing'; t.innerHTML = '<i></i><i></i><i></i>';
+    log.appendChild(t); log.scrollTop = log.scrollHeight;
+    await wait(650 + Math.min(line.length * 22, 900));
+    t.remove(); bub('ye', line); await wait(250);
+  }
+}
+function renderQs(){
+  qs.innerHTML = CHAT.map((c, i) => `<button class="q" data-i="${i}">${c.q}</button>`).join('')
+    + '<button class="q reset" id="qReset">↺ 처음부터</button>';
+}
+async function startChat(){
+  log.innerHTML = '<div class="day">오늘</div>'; asked = 0; renderQs(); chatBusy = true;
+  await wait(300); await yeSay(CHAT_HELLO); chatBusy = false;
+}
+qs.addEventListener('click', async e => {
+  const b = e.target.closest('.q'); if (!b || chatBusy) return;
+  if (b.id === 'qReset'){ startChat(); return; }
+  chatBusy = true; b.disabled = true; const c = CHAT[b.dataset.i];
+  bub('me', c.q); await wait(350); await yeSay(c.a); asked++;
+  if (asked === CHAT.length) await yeSay([CHAT_BYE]);
+  chatBusy = false;
+});
+
+/* ---------- 🐱 고양이: 레오 ---------- */
+const leo = $('#leo'), bubble = $('#bubble'), catpane = $('#catpane');
+const MEOWS = ['냐옹~', '냥!', '미야옹', '냐아앙~', '냥냥 🐾', '레오 등장!', '간식 줘냥', '또 만져줘냥'];
+let pets = 0, streak = 0, lastPet = 0, soundOn = true, actx = null;
+function mew(){
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(), lfo = actx.createOscillator(), lg = actx.createGain();
+    const base = 620 + Math.random() * 180;
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(base, t); o.frequency.linearRampToValueAtTime(base * 1.45, t + .12); o.frequency.exponentialRampToValueAtTime(base * .8, t + .42);
+    lfo.frequency.value = 22; lg.gain.value = 14; lfo.connect(lg); lg.connect(o.frequency);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.09, t + .04); g.gain.exponentialRampToValueAtTime(.001, t + .45);
+    o.connect(g); g.connect(actx.destination); o.start(t); lfo.start(t); o.stop(t + .46); lfo.stop(t + .46);
+  } catch(e){}
+}
+function pop(x, y, ch){
+  const b = catpane.getBoundingClientRect(), k = b.width / catpane.offsetWidth;
+  const el = document.createElement('span'); el.className = 'pop'; el.textContent = ch;
+  el.style.left = (x - b.left) / k + 'px'; el.style.top = (y - b.top) / k + 'px';
+  el.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); el.style.setProperty('--r', (Math.random() * 50 - 25) + 'deg');
+  catpane.appendChild(el); setTimeout(() => el.remove(), 1150);
+}
+leo.addEventListener('click', e => {
+  const now = Date.now(); streak = now - lastPet < 600 ? streak + 1 : 1; lastPet = now; pets++;
+  const purring = streak >= 8;
+  leo.classList.remove('hop'); void leo.offsetWidth;
+  if (purring){ leo.classList.add('purr'); bubble.textContent = '골골골골… 💕'; }
+  else { leo.classList.remove('purr'); leo.classList.add('hop'); bubble.textContent = MEOWS[Math.floor(Math.random() * MEOWS.length)]; mew(); }
+  bubble.classList.add('show');
+  const n = purring ? 4 : 2;
+  for (let i = 0; i < n; i++) setTimeout(() => pop(e.clientX, e.clientY, ['💗','🐾','✨','💕','🐟'][Math.floor(Math.random() * 5)]), i * 70);
+  $('#leoCount').innerHTML = `레오를 <em>${pets}</em>번 쓰다듬었어요` + (purring ? ' · 레오가 기분 최고예요!' : '');
+  clearTimeout(window._mw); window._mw = setTimeout(() => { bubble.classList.remove('show'); leo.classList.remove('purr'); }, 1400);
+});
+// 마우스 쪽으로 사진이 살짝 기울어짐
+leo.addEventListener('mousemove', e => {
+  const r = leo.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+  leo.style.setProperty('--ry', (x * 12) + 'deg'); leo.style.setProperty('--rx', (-y * 10) + 'deg');
+});
+leo.addEventListener('mouseleave', () => { leo.style.setProperty('--ry', '0deg'); leo.style.setProperty('--rx', '0deg'); });
+$('#snd').addEventListener('click', () => { soundOn = !soundOn; $('#snd').textContent = soundOn ? '🔈 소리 켜짐' : '🔇 소리 꺼짐'; });
+</script>
+</body>
+</html>
